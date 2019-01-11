@@ -29,13 +29,15 @@ long_line_column=72
 
 [files]
 current_page=2
-FILE_NAME_0=2513;Lua;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fgalliumspoon%2Fspooo.lua;0;4
-FILE_NAME_1=0;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fdb.cpp;0;4
-FILE_NAME_2=550;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2FGUI.py;0;4
-FILE_NAME_3=123;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2FLamentCalendar.py;0;4
+FILE_NAME_0=1175;Lua;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fgalliumspoon%2Fspooo.lua;0;4
+FILE_NAME_1=9222;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fdb.cpp;0;4
+FILE_NAME_2=691;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2FLamentCalendar.py;0;4
+FILE_NAME_3=6651;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGUI.py;0;4
+FILE_NAME_4=2436;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fcontrol%2Fgui_mainwindow.cpp;0;4
+FILE_NAME_5=3425;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDB.py;0;4
 
 [VTE]
-last_dir=/home/ben/galliumspoon
+last_dir=/home/ben/workspace/lamentcalendar
 
 [build-menu]
 EX_00_LB=_Execute
