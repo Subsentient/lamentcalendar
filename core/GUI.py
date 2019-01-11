@@ -148,13 +148,12 @@ class EventView(Gtk.Window):
 		self.Data = EventDict
 		#Populate fields
 		for k in EventDict:
-			#if k == 'name': continue
 			self.ItemLabels[k] = Gtk.Label.new(k.capitalize())
 			self.Fields[k] = Gtk.Entry.new_with_buffer(Gtk.EntryBuffer.new(EventDict[k], -1))
 			self.HBoxes[k] = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 			self.HBoxes[k].pack_start(self.ItemLabels[k], True, False, 8)
 
-			IsNameField = True if k == 'name' else False
+			IsNameField = k == 'name'
 			
 			self.HBoxes[k].pack_start(self.Fields[k], IsNameField, IsNameField, 8)
 
@@ -162,15 +161,16 @@ class EventView(Gtk.Window):
 
 			if IsNameField:
 				self.VBox.pack_start(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), True, True, 8)
-			else:
-				self.Checkboxes[k] = Gtk.CheckButton().new_with_label("All")
-				
-				if EventDict[k] == '*':
-					self.Checkboxes[k].set_active(True)
-					self.AnyBoxClicked(self.Checkboxes[k], k)
-				
-				self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 0)
-				self.Checkboxes[k].connect('toggled', self.AnyBoxClicked, k)
+				continue
+	
+			self.Checkboxes[k] = Gtk.CheckButton().new_with_label("All")
+			
+			if EventDict[k] == '*':
+				self.Checkboxes[k].set_active(True)
+				self.AnyBoxClicked(self.Checkboxes[k], k)
+			
+			self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 0)
+			self.Checkboxes[k].connect('toggled', self.AnyBoxClicked, k)
 			
 		#Bottom controls
 		self.AcceptButton = Gtk.Button.new_with_mnemonic('_Accept')
