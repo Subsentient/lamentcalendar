@@ -1,7 +1,17 @@
 import sqlite3, sys, os
 
 #I could have just used pickle I guess, but I wanted something portable and recoverable.
+
+Fields = ( 'name', 'year', 'month', 'day', 'weekday', 'hours', 'minutes' )
+
+def NewEmptyItem():
+	RetVal = {}
+	for f in Fields:
+		RetVal[f] = ''
+	return RetVal
+
 class DBObject(object):
+
 	def __init__(self, FilePath):
 		
 		if not os.path.isfile(FilePath):
@@ -41,7 +51,10 @@ class DBObject(object):
 			raise KeyError('No key ' + Key + ' in database!')
 		assert self.Delete(Key)
 		del self.Data[Key]
-		
+
+	def __contains__(self, Name):
+		return Name in self.Data
+
 	def __iter__(self):
 		for Item in self.Data:
 			yield Item
@@ -62,6 +75,7 @@ class DBObject(object):
 						"weekday text not null,"
 						"hours text not null,"
 						"minutes text not null);")
+			self.Conn.commit()
 			return True
 		except Exception as Err:
 			print('Error executing database setup operation, caught ' + type(Err).__name__ + ' attempting to execute().')
@@ -87,7 +101,7 @@ class DBObject(object):
 							InfoDict["weekday"],
 							InfoDict["hours"],
 							InfoDict["minutes"]))
-
+			self.Conn.commit()
 			return True
 		except Exception as Err:
 			print('Error storing item ' + InfoDict["name"] + " into database.")
@@ -99,6 +113,7 @@ class DBObject(object):
 
 		try:
 			Cursor.execute("delete from events where name=?;", (ItemName,))
+			self.Conn.commit()
 			return True
 		except Exception as Err:
 			return False
@@ -158,5 +173,8 @@ class DBObject(object):
 			and self.DateCmp(Day, Item['day']) \
 			and self.DateCmp(Weekday, Item['weekday']):
 				Results.append(Item)
-				
+
+		if Results:
+			Results.sort(key = lambda Var : Var['name'].lower())
+		
 		return Results

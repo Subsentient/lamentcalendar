@@ -44,6 +44,8 @@ class MainWindow(Gtk.Window):
 		self.QuitItem.connect('activate', self.TerminateApp)
 		self.NewEventItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_NEW)
 		self.NewEventItem.set_label("New Event")
+		
+		self.NewEventItem.connect('activate', self.NewClicked)
 
 		self.FileMenu.append(self.NewEventItem)
 		self.FileMenu.append(self.QuitItem)
@@ -59,6 +61,9 @@ class MainWindow(Gtk.Window):
 
 	def TerminateApp(self, Widget):
 		sys.exit(0)
+	def NewClicked(self, Widget):
+		if 'newitem' in self.Callbacks:
+			self.Callbacks['newitem'][0](*self.Callbacks['newitem'][1:])
 
 	def DayClicked(self, Calendar):
 		assert Calendar is self.Calendar
@@ -66,7 +71,7 @@ class MainWindow(Gtk.Window):
 		Month += 1
 
 		if 'dayclick' in self.Callbacks:
-			self.Callbacks['dayclick'](Year, Month, Day)
+			self.Callbacks['dayclick'][0](Year, Month, Day, *self.Callbacks['dayclick'][1:])
 			
 	def MarkDay(self, Day):
 		self.Calendar.mark_day(Day)
@@ -76,6 +81,9 @@ class MainWindow(Gtk.Window):
 
 class DayView(Gtk.Window):
 	def __init__(self, Year, Month, Day, DayList, Callbacks={}):
+		self.Callbacks = Callbacks
+
+		self.Year, self.Month, self.Day = Year, Month, Day
 		
 		Gtk.Window.__init__(self, title='Lamentations of ' + str(Year) + '-' +\
 		DoubleDigitFormat(str(Month)) + '-' + \
@@ -98,38 +106,54 @@ class DayView(Gtk.Window):
 		
 		
 		for Value in DayList:
-			Label = Gtk.Label(Value['name'])
-			
-			HBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-			
-			HBox.pack_start(Label, False, False, 4)
-			HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 4)
-
-			TimeString = DoubleDigitFormat(Value['hours']) + ':' + DoubleDigitFormat(Value['minutes'])
-			
-			HBox.pack_start(Gtk.Label(TimeString), False, False, 0)
-			HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 8)
-			
-			Button = Gtk.Button.new_with_label("Edit/View")
-			ButtonAlign = Gtk.Alignment.new(1.0, 1.0, 0.0, 1.0)
-			ButtonAlign.add(Button)
-			
-			if 'editclicked' in Callbacks:
-				Button.connect('clicked', Callbacks['editclicked'][0], Callbacks['editclicked'][1], Value['name'])
-			
-			HBox.pack_start(ButtonAlign, True, True, 0)
-
-			
-			self.WindowViewBox.pack_start(HBox, True, False, 0)
-			self.WindowViewBox.pack_start(Gtk.Separator(), False, True, 0)
+			self.AddItem(Value)
 
 
+	def AddItem(self, Value):
+		Label = Gtk.Label(Value['name'])
 		
+		HBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 		
+		HBox.pack_start(Label, False, False, 4)
+		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 4)
+	
+		TimeString = DoubleDigitFormat(Value['hours']) + ':' + DoubleDigitFormat(Value['minutes'])
+		
+		HBox.pack_start(Gtk.Label(TimeString), False, False, 0)
+		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 8)
+		
+		Button = Gtk.Button.new_with_label("Edit/View")
+		ButtonAlign = Gtk.Alignment.new(1.0, 1.0, 0.0, 1.0)
+		ButtonAlign.add(Button)
+		
+		if 'editclicked' in self.Callbacks:
+			Button.connect('clicked', self.Callbacks['editclicked'][0], Value['name'], self, *self.Callbacks['editclicked'][1:])
+		
+		HBox.pack_start(ButtonAlign, True, True, 0)
+	
+		
+		self.WindowViewBox.pack_start(HBox, True, False, 0)
+		self.WindowViewBox.pack_start(Gtk.Separator(), False, True, 0)
 
+	def Wipe(self):
+		self.WindowView.remove(self.WindowViewBox)
+		self.WindowViewBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+		self.WindowView.add(self.WindowViewBox)
+	def Repopulate(self, DayList):
+		self.Wipe()
+		
+		for Value in DayList:
+			self.AddItem(Value)
+		self.show_all()
+		
 class EventView(Gtk.Window):
 	def __init__(self, EventDict, OnCompleteFunc=None, OnCompleteData=None):
+		assert 'name' in EventDict
+		
+		self.OriginalName = EventDict['name']
+
 		Gtk.Window.__init__(self, title='Event "' + EventDict['name'] + '"')
+		
 		SetWindowIcon(self)
 
 		self.set_resizable(False)
@@ -193,11 +217,11 @@ class EventView(Gtk.Window):
 	def StateClicked(self, Button, OnCompleteFunc, OnCompleteData):
 		NeedUserFunc = Button is self.AcceptButton
 
-		Dict = self.Data
-
 		if not NeedUserFunc or not OnCompleteFunc:
 			self.destroy()
 			return
+			
+		Dict = self.Data
 
 		for k in self.Fields:
 			Value = self.Fields[k].get_buffer().get_text()
@@ -208,12 +232,9 @@ class EventView(Gtk.Window):
 			Dict[k] = Value
 
 		if OnCompleteData:
-			OnCompleteFunc(Dict, OnCompleteData)
+			OnCompleteFunc(Dict, self.OriginalName, *OnCompleteData)
 		else:
-			OnCompleteFunc(Dict)
+			OnCompleteFunc(Dict, self.OriginalName)
 
 		self.destroy()
 
-if __name__ == '__main__': #For debugging
-	EventView({'name':'wibble derp', 'derp':'4444'}, sys.exit).show_all()
-	Gtk.main()
