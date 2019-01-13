@@ -158,9 +158,9 @@ class DayView(Gtk.Window):
 		HBox.pack_start(Gtk.Label(TimeString), False, False, 0)
 		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 8)
 
-		DateString = '<span foreground="#00cccc">Y: </span>' + DoubleDigitFormat(Value['year']) + ' ' + \
-					'<span foreground="#00cc00">M: </span>' + DoubleDigitFormat(Value['month']) + ' ' +\
-					'<span foreground="#cccc00">D: </span>' + DoubleDigitFormat(Value['day']) + '   ' + \
+		DateString = '<span foreground="#00cccc">' + DoubleDigitFormat(Value['year']) + '</span>-' + \
+					'<span foreground="#00cc00">' + DoubleDigitFormat(Value['month']) + '</span>-' +\
+					'<span foreground="#cccc00">' + DoubleDigitFormat(Value['day']) + '</span>   ' + \
 					'<b>' + WeekdayFormat(Value['weekday']) + '</b>'
 
 		DateLabel = Gtk.Label.new()
