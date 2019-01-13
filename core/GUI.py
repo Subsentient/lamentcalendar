@@ -102,7 +102,7 @@ class DayView(Gtk.Window):
 
 		self.Year, self.Month, self.Day = Year, Month, Day
 		
-		Gtk.Window.__init__(self, title='Lamentations of ' + str(Year) + '-' +\
+		Gtk.Window.__init__(self, title='Events for ' + str(Year) + '-' +\
 		DoubleDigitFormat(str(Month)) + '-' + \
 		DoubleDigitFormat(str(Day)))
 		SetWindowIcon(self)
@@ -110,6 +110,25 @@ class DayView(Gtk.Window):
 		self.set_default_size(500, 300)
 		self.VBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 		self.add(self.VBox)
+
+		self.CommandBarBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+		
+		self.NewEventButton = Gtk.Button.new_with_mnemonic("_New")
+		
+		if 'newclicked' in self.Callbacks:
+			self.NewEventButton.connect('clicked', self.Callbacks['newclicked'][0], '', self, *self.Callbacks['newclicked'][1:])
+			
+		self.NewEventButtonAlign = Gtk.Alignment.new(1.0, 0.0, 0.0, 0.0)
+		self.NewEventButtonAlign.add(self.NewEventButton)
+		self.CommandBarLabel = Gtk.Label()
+
+		self.SetCommandBarStatus(DayList)
+		
+		self.CommandBarBox.pack_start(self.CommandBarLabel, False, False, 8)
+		self.CommandBarBox.pack_start(self.NewEventButtonAlign, True, True, 0)
+		
+		self.VBox.pack_start(self.CommandBarBox, False, True, 8)
+		self.VBox.pack_start(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), False, True, 0)
 		
 		self.WindowView = Gtk.ScrolledWindow.new()
 		
@@ -121,10 +140,8 @@ class DayView(Gtk.Window):
 		
 		self.WindowView.add(self.WindowViewBox)
 		
-		
 		for Value in DayList:
 			self.AddItem(Value)
-
 
 	def AddItem(self, Value):
 		Label = Gtk.Label.new()
@@ -158,7 +175,7 @@ class DayView(Gtk.Window):
 		
 		if 'editclicked' in self.Callbacks:
 			Button.connect('clicked', self.Callbacks['editclicked'][0], Value['name'], self, *self.Callbacks['editclicked'][1:])
-		
+
 		HBox.pack_start(ButtonAlign, True, True, 0)
 	
 		
@@ -174,7 +191,11 @@ class DayView(Gtk.Window):
 		
 		for Value in DayList:
 			self.AddItem(Value)
+			
+		self.SetCommandBarStatus(DayList)
 		self.show_all()
+	def SetCommandBarStatus(self, DayList):
+		self.CommandBarLabel.set_text('Found ' + str(len(DayList)) + ' matching events.')
 		
 class EventView(Gtk.Window):
 	def __init__(self, EventDict, Callbacks={}):

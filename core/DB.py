@@ -7,7 +7,7 @@ Fields = ( 'name', 'year', 'month', 'day', 'weekday', 'hours', 'minutes' )
 def NewEmptyItem():
 	RetVal = {}
 	for f in Fields:
-		RetVal[f] = ''
+		RetVal[f] = '*'
 	return RetVal
 
 class DBObject(object):
