@@ -20,7 +20,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 		Year, Month, Day = self.Calendar.get_date()
 		Month += 1
 
-		EventObj = GUI.EventView(DB.NewEmptyItem(), self.OnSaveClick, (self,))
+		EventObj = GUI.EventView(DB.NewEmptyItem(), { 'saveclose' : (self.OnSaveClick, self, None), \
+													'delclose' : (self.OnSaveClick, self, None) } )
 		EventObj.show_all()
 		
 	@staticmethod
@@ -30,11 +31,22 @@ class PrimaryLoopObj(GUI.MainWindow):
 			
 		ForcedSelf.DB[Dict['name']] = Dict
 		
-		DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, '*'))
+		if DayViewDialog:
+			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, '*'))
 		
 	@staticmethod
+	def OnDeleteClick(Dict, OriginalName, ForcedSelf, DayViewDialog):
+		if not OriginalName in ForcedSelf.DB:
+			return
+
+		del ForcedSelf.DB[OriginalName]
+		DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, '*'))
+
+	@staticmethod
 	def OnEditClick(Widget, EventName, DayViewDialog, ForcedSelf):
-		EventObj = GUI.EventView(ForcedSelf.DB[EventName], ForcedSelf.OnSaveClick, (ForcedSelf, DayViewDialog))
+		CallbackDict = { 'saveclose' : (ForcedSelf.OnSaveClick, ForcedSelf, DayViewDialog),
+						'delclose' : (ForcedSelf.OnDeleteClick, ForcedSelf, DayViewDialog) }
+		EventObj = GUI.EventView(ForcedSelf.DB[EventName], CallbackDict)
 		EventObj.show_all()
 		
 MainObj = PrimaryLoopObj()

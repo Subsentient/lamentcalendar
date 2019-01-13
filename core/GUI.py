@@ -3,6 +3,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GdkPixbuf
 import sys, os
 
+Weekdays = { 0 : 'Sun', 1 : 'Mon', 2 : 'Tue', 3 : 'Wed', 4 : 'Thu', 5 : 'Fri', 6 : 'Sat' }
+
 def SetWindowIcon(Window):
 	Window.set_icon(GdkPixbuf.Pixbuf.new_from_file('lament.png'))
 	
@@ -13,7 +15,22 @@ def DoubleDigitFormat(String):
 		List[Inc] = '0' + Item if len(Item) == 1 and Item != '*' else Item
 
 	return ','.join(List)
-	
+
+def WeekdayFormat(String):
+	List = String.split(',')
+
+	for Inc, Item in enumerate(List):
+		if Item == '*': continue
+
+		assert Item.isdigit()
+		if int(Item) not in Weekdays:
+			print('WARNING: No weekday with numeric value ' + Item + ' exists.')
+			continue
+
+		List[Inc] = Weekdays[int(Item)]
+
+	return ','.join(List)
+
 class MainWindow(Gtk.Window):
 	def __init__(self, Callbacks={}): #Yes, the same static-initialized list is indeed what we want.
 		self.Callbacks = Callbacks
@@ -110,7 +127,9 @@ class DayView(Gtk.Window):
 
 
 	def AddItem(self, Value):
-		Label = Gtk.Label(Value['name'])
+		Label = Gtk.Label.new()
+
+		Label.set_markup('<i>' + Value['name'] + '</i>')
 		
 		HBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 		
@@ -120,6 +139,17 @@ class DayView(Gtk.Window):
 		TimeString = DoubleDigitFormat(Value['hours']) + ':' + DoubleDigitFormat(Value['minutes'])
 		
 		HBox.pack_start(Gtk.Label(TimeString), False, False, 0)
+		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 8)
+
+		DateString = '<span foreground="#00cccc">Y: </span>' + DoubleDigitFormat(Value['year']) + ' ' + \
+					'<span foreground="#00cc00">M: </span>' + DoubleDigitFormat(Value['month']) + ' ' +\
+					'<span foreground="#cccc00">D: </span>' + DoubleDigitFormat(Value['day']) + '   ' + \
+					'<b>' + WeekdayFormat(Value['weekday']) + '</b>'
+
+		DateLabel = Gtk.Label.new()
+		DateLabel.set_markup(DateString)
+		
+		HBox.pack_start(DateLabel, False, False, 0)
 		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 8)
 		
 		Button = Gtk.Button.new_with_label("Edit/View")
@@ -147,11 +177,12 @@ class DayView(Gtk.Window):
 		self.show_all()
 		
 class EventView(Gtk.Window):
-	def __init__(self, EventDict, OnCompleteFunc=None, OnCompleteData=None):
+	def __init__(self, EventDict, Callbacks={}):
 		assert 'name' in EventDict
 		
 		self.OriginalName = EventDict['name']
-
+		self.Callbacks = Callbacks
+		
 		Gtk.Window.__init__(self, title='Event "' + EventDict['name'] + '"')
 		
 		SetWindowIcon(self)
@@ -197,13 +228,20 @@ class EventView(Gtk.Window):
 			self.Checkboxes[k].connect('toggled', self.AnyBoxClicked, k)
 			
 		#Bottom controls
+		self.DeleteButton = Gtk.Button.new_with_label('DELETE')
+		self.DeleteButton.set_use_underline(True)
+		
 		self.AcceptButton = Gtk.Button.new_with_mnemonic('_Accept')
 		self.CancelButton = Gtk.Button.new_with_mnemonic('_Cancel')
-		self.AcceptButton.connect('clicked', self.StateClicked, OnCompleteFunc, OnCompleteData)
-		self.CancelButton.connect('clicked', self.StateClicked, OnCompleteFunc, OnCompleteData)
+		
+		self.AcceptButton.connect('clicked', self.StateClicked)
+		self.CancelButton.connect('clicked', self.StateClicked)
+		
+		self.DeleteButton.connect('clicked', self.StateClicked)
 
 		self.ButtonAlign = Gtk.Alignment.new(1.0, 1.0, 0.1, 1.0)
 		self.ButtonHBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+		self.ButtonHBox.pack_start(self.DeleteButton, True, False, 48)
 		self.ButtonHBox.add(self.CancelButton)
 		self.ButtonHBox.add(self.AcceptButton)
 		self.ButtonAlign.add(self.ButtonHBox)
@@ -214,10 +252,13 @@ class EventView(Gtk.Window):
 	def AnyBoxClicked(self, Checkbox, Key):
 		self.Fields[Key].set_sensitive(not Checkbox.get_active())
 		
-	def StateClicked(self, Button, OnCompleteFunc, OnCompleteData):
-		NeedUserFunc = Button is self.AcceptButton
+	def StateClicked(self, Button):
 
-		if not NeedUserFunc or not OnCompleteFunc:
+		if Button is self.AcceptButton and 'saveclose' in self.Callbacks:
+			Callback = self.Callbacks['saveclose']
+		elif Button is self.DeleteButton and 'delclose' in self.Callbacks:
+			Callback = self.Callbacks['delclose']
+		else:
 			self.destroy()
 			return
 			
@@ -231,10 +272,8 @@ class EventView(Gtk.Window):
 				
 			Dict[k] = Value
 
-		if OnCompleteData:
-			OnCompleteFunc(Dict, self.OriginalName, *OnCompleteData)
-		else:
-			OnCompleteFunc(Dict, self.OriginalName)
+		Callback[0](Dict, self.OriginalName, *Callback[1:])
+
 
 		self.destroy()
 
