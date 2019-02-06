@@ -71,7 +71,8 @@ class MainWindow(Gtk.Window):
 		#Configure calendar display.
 		self.Calendar = Gtk.Calendar()
 		self.Calendar.connect('day-selected-double-click', self.DayClicked)
-
+		self.Calendar.connect('month-changed', self.MonthChanged)
+		
 		#Add it all in
 		self.VBox.pack_start(self.MenuBarAlign, False, True, 0)
 		self.VBox.pack_start(self.Calendar, True, True, 0)
@@ -89,7 +90,17 @@ class MainWindow(Gtk.Window):
 
 		if 'dayclick' in self.Callbacks:
 			self.Callbacks['dayclick'][0](Year, Month, Day, *self.Callbacks['dayclick'][1:])
+
+	def MonthChanged(self, Calendar):
+		assert Calendar is self.Calendar
+		
+		if 'monthchanged' in self.Callbacks:
 			
+			Dates = [*self.Calendar.get_date()]
+			Dates[1] += 1 #Change month to 1 to 12 instead of 0 to 11
+			
+			self.Callbacks['monthchanged'][0](*Dates, *self.Callbacks['monthchanged'][1:])
+		
 	def MarkDay(self, Day):
 		self.Calendar.mark_day(Day)
 

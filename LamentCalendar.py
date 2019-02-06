@@ -7,8 +7,16 @@ class PrimaryLoopObj(GUI.MainWindow):
 	DB_FILEPATH = 'events.db'
 	
 	def __init__(self):
-		GUI.MainWindow.__init__(self, {'dayclick': (self.OnDayClick,), 'newitem' : (self.NewItemClicked,) })
+		GUI.MainWindow.__init__(self, {'monthchanged' : (self.OnMonthChange,),
+										'dayclick': (self.OnDayClick,),
+										'newitem' : (self.NewItemClicked,) }
+								)
+		Dates = [*self.Calendar.get_date()]
+		Dates[1] += 1
+		
 		self.DB = DB.DBObject(PrimaryLoopObj.DB_FILEPATH)
+
+		self.OnMonthChange(*Dates)
 		
 	def OnDayClick(self, Year, Month, Day):
 		DayList = self.DB.SearchByDate(Year, Month, Day, '*')
@@ -16,7 +24,19 @@ class PrimaryLoopObj(GUI.MainWindow):
 		DayViewObj = GUI.DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick, self),\
 															'newclicked' : (self.OnNewButtonClick, self) })
 		DayViewObj.show_all()
+		
+	def OnMonthChange(self, Year, Month, Day):
+		self.Calendar.clear_marks()
+		
+		DayList = self.DB.SearchByDate(Year, Month, '*', '*')
 
+		for Event in DayList:
+			for Day in Event['day'].split(','):
+				if not Day.isnumeric():
+					continue
+					
+				self.Calendar.mark_day(int(Day))
+		
 	def NewItemClicked(self):
 		Year, Month, Day = self.Calendar.get_date()
 		Month += 1
