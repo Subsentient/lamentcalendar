@@ -74,10 +74,12 @@ class MainWindow(Gtk.Window):
 		self.QuitItem.connect('activate', self.TerminateApp)
 		self.NewEventItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_NEW)
 		self.NewEventItem.set_label("New Event")
-		
 		self.NewEventItem.connect('activate', self.NewClicked)
-
+		
+		self.AllEventsItem = Gtk.MenuItem.new_with_mnemonic('List _all events')
+		self.AllEventsItem.connect('activate', self.ListAllClicked)
 		self.FileMenu.append(self.NewEventItem)
+		self.FileMenu.append(self.AllEventsItem)
 		self.FileMenu.append(self.QuitItem)
 
 
@@ -92,6 +94,11 @@ class MainWindow(Gtk.Window):
 
 	def TerminateApp(self, Widget):
 		sys.exit(0)
+		
+	def ListAllClicked(self, Widget):
+		if 'listallclicked' in self.Callbacks:
+			self.Callbacks['listallclicked'][0]('*', '*', '*', *self.Callbacks['listallclicked'][1:])
+			
 	def NewClicked(self, Widget):
 		if 'newitem' in self.Callbacks:
 			self.Callbacks['newitem'][0](*self.Callbacks['newitem'][1:])

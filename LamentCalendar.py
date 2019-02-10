@@ -9,7 +9,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 	def __init__(self):
 		GUI.MainWindow.__init__(self, {'monthchanged' : (self.OnMonthChange,),
 										'dayclick': (self.OnDayClick,),
-										'newitem' : (self.NewItemClicked,) }
+										'newitem' : (self.NewItemClicked,),
+										'listallclicked' : (self.OnListAllClick,), }
 								)
 		Dates = [*self.Calendar.get_date()]
 		Dates[1] += 1
@@ -18,6 +19,13 @@ class PrimaryLoopObj(GUI.MainWindow):
 
 		self.OnMonthChange(*Dates)
 		self.Notifications = {}
+		
+	def OnListAllClick(self, *Unused):
+		DayList = [self.DB[Item] for Item in self.DB] #DBObject is iterable like a dict
+
+		DayViewObj = GUI.DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick, self),
+															'newclicked' : (self.OnNewButtonClick, self) } )
+		DayViewObj.show_all()
 		
 	def OnDayClick(self, Year, Month, Day):
 		DayList = self.DB.SearchByDate(Year, Month, Day, GUI.GetWeekdayFromDate(Year, Month, Day))
