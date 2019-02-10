@@ -465,5 +465,6 @@ class TrayIconObject(Gtk.StatusIcon):
 			self.MainObj.hide()
 		else:
 			self.MainObj.show_all()
-		self.WindowVisible = not self.WindowVisible
+		if self.MainObj:
+			self.WindowVisible = not self.WindowVisible
 
