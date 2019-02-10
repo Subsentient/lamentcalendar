@@ -10,6 +10,7 @@ class FieldType(IntEnum):
 	
 Fields = \
 		{	'name' : FieldType.TEXT,
+			'description' : FieldType.TEXT,
 			'year' : FieldType.TIMEFORMAT,
 			'month' : FieldType.TIMEFORMAT,
 			'day' : FieldType.TIMEFORMAT,
@@ -94,6 +95,7 @@ class DBObject(object):
 		try:
 			Cursor.execute("create table events "
 						"(name text not null unique,"
+						"description text not null,"
 						"year text not null,"
 						"month text not null,"
 						"day text not null,"
@@ -116,6 +118,7 @@ class DBObject(object):
 		try:
 			Cursor.execute("insert into events "
 							"(name, "
+							"description, "
 							"year, "
 							"month, "
 							"day, "
@@ -124,8 +127,9 @@ class DBObject(object):
 							"minutes, "
 							"alert_file, "
 							"repeat_alarm_sound) "
-							"values (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+							"values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
 							(InfoDict["name"],
+							InfoDict["description"],
 							InfoDict["year"],
 							InfoDict["month"],
 							InfoDict["day"],
@@ -166,6 +170,7 @@ class DBObject(object):
 		for Tuple in Data:
 			Item = {}
 			Item['name'], \
+			Item['description'], \
 			Item['year'], \
 			Item['month'], \
 			Item['day'], \

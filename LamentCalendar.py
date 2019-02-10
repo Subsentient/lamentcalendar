@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import sys
+import sys, time
 sys.path.append('core')
 import GUI, DB, Alert
 
@@ -17,6 +17,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		self.DB = DB.DBObject(PrimaryLoopObj.DB_FILEPATH)
 
 		self.OnMonthChange(*Dates)
+		self.Notifications = {}
 		
 	def OnDayClick(self, Year, Month, Day):
 		DayList = self.DB.SearchByDate(Year, Month, Day, '*')
@@ -36,7 +37,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 					continue
 					
 				self.Calendar.mark_day(int(Day))
-		
+
 	def NewItemClicked(self):
 		Year, Month, Day = self.Calendar.get_date()
 		Month += 1
@@ -85,7 +86,58 @@ class PrimaryLoopObj(GUI.MainWindow):
 		EventObj = GUI.EventView(TempObj, CallbackDict)
 		EventObj.show_all()
 
+	@staticmethod
+	def CheckTimesFunc(MainObj):
+		def FieldMatches(Times, T2):
+			if Times == '*':
+				return True
+			for Time in Times.split(','):
+				if int(Time) != int(T2):
+					continue
+				return True
+		
+		TimeStruct = time.localtime()
+		
+		#Python's time module uses Monday for the week start... ugh. Compensate for that.
+		WeekdayCalc = TimeStruct.tm_wday + 1 if TimeStruct.tm_wday < 6 else 0
+		
+		TodayItems = MainObj.DB.SearchByDate(TimeStruct.tm_year, TimeStruct.tm_mon, TimeStruct.tm_mday, WeekdayCalc)
+
+		for Item in TodayItems:
+			if FieldMatches(Item['hours'], TimeStruct.tm_hour) and FieldMatches(Item['minutes'], TimeStruct.tm_min) \
+				and Item['name'] not in MainObj.Notifications \
+				and TimeStruct.tm_sec == 0:
+					MainObj.SpawnNotification(Item)
+				
+		return True
+
+	@staticmethod
+	def DismissNotification(**Args):
+		Obj = Args['mainobj']
+		Name = Args['instancename']
+		
+		del Obj.Notifications[Name]
+		
+	def SpawnNotification(self, Item):
+		
+		Title = 'Event "{0}" time activation triggered'.format(Item['name'])
+		Msg = 'Time activation triggered for event "{0}" on '.format(Item['name']) + time.ctime() \
+				+ '\nEvent description:\n\n' + Item['description']
+
+		self.Notifications[Item['name']] = NotifObj = GUI.Notification(Title,
+																		Msg,
+																		Item['alert_file'] if Item['alert_file'] != 'null' else None,
+																		int(Item['repeat_alarm_sound']),
+																		callback=self.__class__.DismissNotification,
+																		instancename=Item['name'],
+																		mainobj=self)
+		NotifObj.show_all()
+
+		return True
+		
 MainObj = PrimaryLoopObj()
 MainObj.show_all()
+
+GUI.GLib.timeout_add(200, PrimaryLoopObj.CheckTimesFunc, MainObj)
 
 GUI.Gtk.main()

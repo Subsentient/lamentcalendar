@@ -1,6 +1,7 @@
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GdkPixbuf
+gi.require_version("GLib", "2.0")
+from gi.repository import Gtk, GdkPixbuf, GLib
 import sys, os
 
 from DB import Fields, FieldType
@@ -235,7 +236,7 @@ class EventView(Gtk.Window):
 			self.HBoxes[k].pack_start(self.Fields[k], IsText, IsText, 8)
 			
 		elif Fields[k] == FieldType.FILEPATH:
-			Filename = self.Data[k] if self.Data[k] != 'null' else '(none)'
+			Filename = self.Data[k] if self.Data[k] != 'null' else 'null'
 			self.Fields[k] = Gtk.Button.new_with_label(Filename if len(Filename) < 25 else Filename[:20] + '...')
 			self.Fields[k].connect('clicked', self.RunChooser, k)
 			self.Extra[k] = Filename
@@ -369,9 +370,9 @@ class EventView(Gtk.Window):
 		self.destroy()
 
 class Notification(Gtk.Window):
-	def __init__(self, Title, Message, AudioFile = None, Loop = False):
+	def __init__(self, Title, Message, AudioFile = None, Loop = False, **Extra):
 		Gtk.Window.__init__(self, title=Title)
-		#SetWindowIcon(self)
+		SetWindowIcon(self)
 		
 		self.set_default_size(400, 150)
 		self.VBox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -400,8 +401,9 @@ class Notification(Gtk.Window):
 		DismissAlign = Gtk.Alignment.new(1.0, 1.0, 0.0, 0.0)
 
 		self.SnoozeButton = Gtk.Button.new_with_mnemonic("_Snooze")
+		self.SnoozeButton.set_sensitive(False) #Snooze not yet implemented
 		self.DismissButton = Gtk.Button.new_with_mnemonic("_Dismiss")
-		self.DismissButton.connect('clicked', self.__class__.DismissClicked, self)
+		self.DismissButton.connect('clicked', self.__class__.DismissClicked, self, Extra)
 		SnoozeAlign.add(self.SnoozeButton)
 		DismissAlign.add(self.DismissButton)
 
@@ -410,15 +412,16 @@ class Notification(Gtk.Window):
 
 		if AudioFile:
 			self.AlertObject = Alert.AudioEvent(AudioFile, Loop)
+		else:
+			self.AlertObject = None
 
 	@staticmethod
-	def DismissClicked(Button, ForcedSelf):
+	def DismissClicked(Button, ForcedSelf, Extra):
+		del ForcedSelf.AlertObject
+		
 		ForcedSelf.destroy()
 
-if __name__ == '__main__':
-	Notification("Testy", 'Message penis farts', '/geekhut/borghail.ogg', True).show_all()
-	Gtk.main()
-
-
+		if 'callback' in Extra:
+			Extra['callback'](**Extra)
 
 
