@@ -1,13 +1,38 @@
 import sqlite3, sys, os
-
+from enum import IntEnum
 #I could have just used pickle I guess, but I wanted something portable and recoverable.
 
-Fields = ( 'name', 'year', 'month', 'day', 'weekday', 'hours', 'minutes' )
+class FieldType(IntEnum):
+	TEXT = 0
+	TIMEFORMAT = 1
+	FILEPATH = 2
+	BOOLEAN = 3
+	
+Fields = \
+		{	'name' : FieldType.TEXT,
+			'year' : FieldType.TIMEFORMAT,
+			'month' : FieldType.TIMEFORMAT,
+			'day' : FieldType.TIMEFORMAT,
+			'weekday' : FieldType.TIMEFORMAT,
+			'hours' : FieldType.TIMEFORMAT,
+			'minutes' : FieldType.TIMEFORMAT,
+			'alert_file' : FieldType.FILEPATH,
+			'repeat_alarm_sound' : FieldType.BOOLEAN
+		}
 
 def NewEmptyItem():
 	RetVal = {}
+	
 	for f in Fields:
-		RetVal[f] = '*'
+		if Fields[f] == FieldType.TEXT:
+			RetVal[f] = ''
+		elif Fields[f] == FieldType.TIMEFORMAT:
+			RetVal[f] = '*'
+		elif Fields[f] == FieldType.FILEPATH:
+			RetVal[f] = 'null'
+		elif Fields[f] == FieldType.BOOLEAN:
+			RetVal[f] = '0'
+
 	return RetVal
 
 class DBObject(object):
@@ -74,7 +99,9 @@ class DBObject(object):
 						"day text not null,"
 						"weekday text not null,"
 						"hours text not null,"
-						"minutes text not null);")
+						"minutes text not null,"
+						"alert_file text not null,"
+						"repeat_alarm_sound text not null);")
 			self.Conn.commit()
 			return True
 		except Exception as Err:
@@ -82,6 +109,8 @@ class DBObject(object):
 			return False
 	def Insert(self, InfoDict):
 		assert type(InfoDict) is dict and 'name' in InfoDict
+
+		#print(InfoDict)
 		
 		Cursor = self.Conn.cursor()
 		try:
@@ -92,15 +121,19 @@ class DBObject(object):
 							"day, "
 							"weekday, "
 							"hours, "
-							"minutes) "
-							"values (?, ?, ?, ?, ?, ?, ?);",
+							"minutes, "
+							"alert_file, "
+							"repeat_alarm_sound) "
+							"values (?, ?, ?, ?, ?, ?, ?, ?, ?);",
 							(InfoDict["name"],
 							InfoDict["year"],
 							InfoDict["month"],
 							InfoDict["day"],
 							InfoDict["weekday"],
 							InfoDict["hours"],
-							InfoDict["minutes"]))
+							InfoDict["minutes"],
+							InfoDict["alert_file"],
+							InfoDict["repeat_alarm_sound"]))
 			self.Conn.commit()
 			return True
 		except Exception as Err:
@@ -138,7 +171,9 @@ class DBObject(object):
 			Item['day'], \
 			Item['weekday'], \
 			Item['hours'], \
-			Item['minutes'] = Tuple
+			Item['minutes'], \
+			Item['alert_file'], \
+			Item['repeat_alarm_sound'] = Tuple
 			
 			Results[Item['name']] = Item
 		

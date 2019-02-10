@@ -28,17 +28,22 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=0
-FILE_NAME_0=9361;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fdb.cpp;0;4
-FILE_NAME_1=2164;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2FLamentCalendar.py;0;4
-FILE_NAME_2=6219;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGUI.py;0;4
+current_page=1
+FILE_NAME_0=9427;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fdb.cpp;0;4
+FILE_NAME_1=397;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2FLamentCalendar.py;0;4
+FILE_NAME_2=7784;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGUI.py;0;4
 FILE_NAME_3=2436;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fcontrol%2Fgui_mainwindow.cpp;0;4
-FILE_NAME_4=2602;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDB.py;0;4
+FILE_NAME_4=3018;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDB.py;0;4
+FILE_NAME_5=881;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FAlert.py;0;4
 
 [VTE]
-last_dir=/home/ben/workspace/lamentcalendar
+last_dir=/home/ben/workspace/lamentcalendar/core
 
 [build-menu]
 EX_00_LB=_Execute
 EX_00_CM=python3 -B "%f"
 EX_00_WD=
+PythonFT_00_LB=_Compile
+PythonFT_00_CM=python3 -m py_compile "%f"
+PythonFT_00_WD=
+filetypes=Python;

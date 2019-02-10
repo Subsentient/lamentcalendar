@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 sys.path.append('core')
-import GUI, DB
+import GUI, DB, Alert
 
 class PrimaryLoopObj(GUI.MainWindow):
 	DB_FILEPATH = 'events.db'

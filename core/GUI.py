@@ -3,6 +3,10 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GdkPixbuf
 import sys, os
 
+from DB import Fields, FieldType
+
+import Alert
+
 Weekdays = { 0 : 'Sun', 1 : 'Mon', 2 : 'Tue', 3 : 'Wed', 4 : 'Thu', 5 : 'Fri', 6 : 'Sat' }
 
 def SetWindowIcon(Window):
@@ -209,6 +213,46 @@ class DayView(Gtk.Window):
 		self.CommandBarLabel.set_text('Found ' + str(len(DayList)) + ' matching events.')
 		
 class EventView(Gtk.Window):
+	def RunChooser(self, Button, Key):
+		Chooser = Gtk.FileChooserDialog("Choose file", self, Gtk.FileChooserAction.OPEN,
+										(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+										Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+		Response = Chooser.run()
+
+		if Response == Gtk.ResponseType.OK:
+			Filename = Chooser.get_filename()
+			self.Fields[Key].set_label(Filename if len(Filename) < 25 else Filename[:20] + '...')
+			self.Extra[Key] = Filename
+		Chooser.destroy()
+		
+	def __CreateField(self, k):
+		
+		if Fields[k] == FieldType.TEXT or Fields[k] == FieldType.TIMEFORMAT:
+			self.Fields[k] = Gtk.Entry.new_with_buffer(Gtk.EntryBuffer.new(self.Data[k], -1))
+
+			IsText = Fields[k] == FieldType.TEXT
+			
+			self.HBoxes[k].pack_start(self.Fields[k], IsText, IsText, 8)
+			
+		elif Fields[k] == FieldType.FILEPATH:
+			Filename = self.Data[k] if self.Data[k] != 'null' else '(none)'
+			self.Fields[k] = Gtk.Button.new_with_label(Filename if len(Filename) < 25 else Filename[:20] + '...')
+			self.Fields[k].connect('clicked', self.RunChooser, k)
+			self.Extra[k] = Filename
+			self.HBoxes[k].pack_start(self.Fields[k], True, False, 8)
+
+		elif Fields[k] == FieldType.BOOLEAN:
+			self.Fields[k] = Gtk.CheckButton.new()
+
+			self.HBoxes[k].pack_start(self.Fields[k], True, False, 8)
+			
+		#Time formats also have a checkbox.
+		if Fields[k] == FieldType.TIMEFORMAT:
+			self.Checkboxes[k] = Gtk.CheckButton().new_with_label("All")
+			
+			self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 8)
+
+
 	def __init__(self, EventDict, Callbacks={}):
 		assert 'name' in EventDict
 		
@@ -231,34 +275,40 @@ class EventView(Gtk.Window):
 		self.Fields = {}
 		self.Checkboxes = {}
 		self.ItemLabels = {}
-
+		self.Extra = {}
+		
 		self.Data = EventDict
 		#Populate fields
 		for k in EventDict:
-			self.ItemLabels[k] = Gtk.Label.new(k.capitalize())
-			self.Fields[k] = Gtk.Entry.new_with_buffer(Gtk.EntryBuffer.new(EventDict[k], -1))
+			self.ItemLabels[k] = Gtk.Label.new(k.replace('_', ' ').capitalize())
 			self.HBoxes[k] = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-			self.HBoxes[k].pack_start(self.ItemLabels[k], True, False, 8)
 
-			IsNameField = k == 'name'
+			LabelAlign = Gtk.Alignment.new(0.0, 0.0, 0.1, 1.0)
+			LabelAlign.add(self.ItemLabels[k])
 			
-			self.HBoxes[k].pack_start(self.Fields[k], IsNameField, IsNameField, 8)
+			self.HBoxes[k].pack_start(LabelAlign, True, True, 8)
+
+			self.__CreateField(k)
 
 			self.VBox.pack_start(self.HBoxes[k], True, True, 8)
 
-			if IsNameField:
+			#Name field needs a separator
+			if Fields[k] == FieldType.TEXT:
 				self.VBox.pack_start(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), True, True, 8)
 				continue
-	
-			self.Checkboxes[k] = Gtk.CheckButton().new_with_label("All")
+				
+			#Time fields need a checkbox
+			if Fields[k] == FieldType.TIMEFORMAT:
+				if EventDict[k] == '*':
+					self.Checkboxes[k].set_active(True)
+					self.AnyBoxClicked(self.Checkboxes[k], k)
 			
-			if EventDict[k] == '*':
-				self.Checkboxes[k].set_active(True)
-				self.AnyBoxClicked(self.Checkboxes[k], k)
-			
-			self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 0)
-			self.Checkboxes[k].connect('toggled', self.AnyBoxClicked, k)
-			
+				self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 0)
+				self.Checkboxes[k].connect('toggled', self.AnyBoxClicked, k)
+
+			if Fields[k] == FieldType.BOOLEAN:
+				self.Fields[k].set_active(int(EventDict[k]))
+				
 		#Bottom controls
 		self.DeleteButton = Gtk.Button.new_with_label('DELETE')
 		self.DeleteButton.set_use_underline(True)
@@ -297,10 +347,19 @@ class EventView(Gtk.Window):
 		Dict = self.Data
 
 		for k in self.Fields:
-			Value = self.Fields[k].get_buffer().get_text()
+			if Fields[k] == FieldType.TIMEFORMAT:
 
-			if k != 'name':
-				if self.Checkboxes[k].get_active(): Value = '*'
+				if self.Checkboxes[k].get_active():
+					Value = '*'
+				else:
+					Value = self.Fields[k].get_buffer().get_text()
+
+			elif Fields[k] == FieldType.TEXT:
+				Value = self.Fields[k].get_buffer().get_text()
+			elif Fields[k] == FieldType.FILEPATH:
+				Value = self.Extra[k]
+			elif Fields[k] == FieldType.BOOLEAN:
+				Value = str(int(self.Fields[k].get_active()))
 				
 			Dict[k] = Value
 
@@ -308,4 +367,58 @@ class EventView(Gtk.Window):
 
 
 		self.destroy()
+
+class Notification(Gtk.Window):
+	def __init__(self, Title, Message, AudioFile = None, Loop = False):
+		Gtk.Window.__init__(self, title=Title)
+		#SetWindowIcon(self)
+		
+		self.set_default_size(400, 150)
+		self.VBox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+		self.add(self.VBox)
+		
+		self.MsgText = Gtk.Label.new(Message)
+
+		self.MsgHBox = Gtk.Box.new(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+
+
+		self.Icon = Gtk.Image.new_from_icon_name('appointment-soon', Gtk.IconSize.DIALOG)
+		
+		self.MsgHBox.pack_start(self.Icon, False, True, 8)
+		self.MsgHBox.pack_start(self.MsgText, False, True, 8)
+		
+		MsgHBoxAlign = Gtk.Alignment.new(0.0, 0.0, 0.0, 0.0)
+		
+		MsgHBoxAlign.add(self.MsgHBox)
+		self.VBox.pack_start(MsgHBoxAlign, True, True, 8)
+
+		self.ButtonHBox = Gtk.Box.new(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+
+		self.VBox.pack_start(self.ButtonHBox, True, True, 8)
+
+		SnoozeAlign = Gtk.Alignment.new(0.0, 1.0, 0.0, 0.0)
+		DismissAlign = Gtk.Alignment.new(1.0, 1.0, 0.0, 0.0)
+
+		self.SnoozeButton = Gtk.Button.new_with_mnemonic("_Snooze")
+		self.DismissButton = Gtk.Button.new_with_mnemonic("_Dismiss")
+		self.DismissButton.connect('clicked', self.__class__.DismissClicked, self)
+		SnoozeAlign.add(self.SnoozeButton)
+		DismissAlign.add(self.DismissButton)
+
+		self.ButtonHBox.pack_start(SnoozeAlign, True, True, 8)
+		self.ButtonHBox.pack_start(DismissAlign, True, True, 8)
+
+		if AudioFile:
+			self.AlertObject = Alert.AudioEvent(AudioFile, Loop)
+
+	@staticmethod
+	def DismissClicked(Button, ForcedSelf):
+		ForcedSelf.destroy()
+
+if __name__ == '__main__':
+	Notification("Testy", 'Message penis farts', '/geekhut/borghail.ogg', True).show_all()
+	Gtk.main()
+
+
+
 
