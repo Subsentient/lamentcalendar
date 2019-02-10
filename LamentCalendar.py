@@ -152,7 +152,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 		return True
 		
 MainObj = PrimaryLoopObj()
-MainObj.show_all()
+if len(sys.argv) < 2 or sys.argv[1] != '--tray':
+	MainObj.show_all()
 
 TrayIcon = GUI.TrayIconObject(MainObj)
 
