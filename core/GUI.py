@@ -12,6 +12,8 @@ from datetime import date
 Weekdays = { 0 : 'Sun', 1 : 'Mon', 2 : 'Tue', 3 : 'Wed', 4 : 'Thu', 5 : 'Fri', 6 : 'Sat' }
 
 def GetWeekdayFromDate(Year, Month, Day):
+	Year, Month, Day = int(Year), int(Month), int(Day)
+	
 	WDay = date(Year, Month, Day).weekday()
 	
 	WeekdayCalc = WDay + 1 if WDay < 6 else 0
@@ -439,4 +441,29 @@ class Notification(Gtk.Window):
 		if 'callback' in Extra:
 			Extra['callback'](**Extra)
 
+class TrayIconObject(Gtk.StatusIcon):
+	def __init__(self, MainObj = None):
+		Gtk.StatusIcon.__init__(self)
+		self.MainObj = MainObj
+
+		NameString = 'Lament Calendar'
+		self.set_name(NameString)
+		self.set_title(NameString)
+		self.set_tooltip_text(NameString)
+		
+		self.set_from_file('lament.png')
+		self.set_visible(True)
+		self.set_has_tooltip(True)
+		if MainObj:
+			self.WindowVisible = MainObj.is_visible()
+		self.connect('activate', self.OnClick)
+		
+	def OnClick(self, *Unused):
+		if not self.MainObj:
+			return
+		if self.WindowVisible:
+			self.MainObj.hide()
+		else:
+			self.MainObj.show()
+		self.WindowVisible = not self.WindowVisible
 

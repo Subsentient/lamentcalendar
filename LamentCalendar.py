@@ -148,6 +148,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 MainObj = PrimaryLoopObj()
 MainObj.show_all()
 
+TrayIcon = GUI.TrayIconObject(MainObj)
+
 GUI.GLib.timeout_add(200, PrimaryLoopObj.CheckTimesFunc, MainObj)
 
 GUI.Gtk.main()
