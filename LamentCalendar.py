@@ -62,7 +62,10 @@ class PrimaryLoopObj(GUI.MainWindow):
 		ForcedSelf.DB[Dict['name']] = Dict
 		
 		if DayViewDialog:
-			WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
+				WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			else:
+				WDay = '*'
 			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
 		
 	@staticmethod
@@ -73,7 +76,10 @@ class PrimaryLoopObj(GUI.MainWindow):
 		del ForcedSelf.DB[OriginalName]
 		
 		if DayViewDialog:
-			WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
+				WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			else:
+				WDay = '*'
 			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
 
 	@staticmethod
