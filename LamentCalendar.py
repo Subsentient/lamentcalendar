@@ -54,7 +54,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 		ForcedSelf.DB[Dict['name']] = Dict
 		
 		if DayViewDialog:
-			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, '*'))
+			WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
 		
 	@staticmethod
 	def OnDeleteClick(Dict, OriginalName, ForcedSelf, DayViewDialog):
@@ -64,7 +65,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 		del ForcedSelf.DB[OriginalName]
 		
 		if DayViewDialog:
-			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, '*'))
+			WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
 
 	@staticmethod
 	def OnEditClick(Widget, EventName, DayViewDialog, ForcedSelf):
