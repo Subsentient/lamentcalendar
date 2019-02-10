@@ -133,7 +133,7 @@ class DayView(Gtk.Window):
 	def __init__(self, Year, Month, Day, DayList, Callbacks={}):
 		self.Callbacks = Callbacks
 
-		self.Year, self.Month, self.Day = Year, Month, Day
+		self.Year, self.Month, self.Day = str(Year), str(Month), str(Day)
 		
 		Gtk.Window.__init__(self, title='Events for ' + str(Year) + '-' +\
 		DoubleDigitFormat(str(Month)) + '-' + \
