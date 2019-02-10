@@ -20,7 +20,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		self.Notifications = {}
 		
 	def OnDayClick(self, Year, Month, Day):
-		DayList = self.DB.SearchByDate(Year, Month, Day, '*')
+		DayList = self.DB.SearchByDate(Year, Month, Day, GUI.GetWeekdayFromDate(Year, Month, Day))
 		
 		DayViewObj = GUI.DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick, self),\
 															'newclicked' : (self.OnNewButtonClick, self) })

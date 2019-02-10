@@ -7,9 +7,17 @@ import sys, os
 from DB import Fields, FieldType
 
 import Alert
+from datetime import date
 
 Weekdays = { 0 : 'Sun', 1 : 'Mon', 2 : 'Tue', 3 : 'Wed', 4 : 'Thu', 5 : 'Fri', 6 : 'Sat' }
 
+def GetWeekdayFromDate(Year, Month, Day):
+	WDay = date(Year, Month, Day).weekday()
+	
+	WeekdayCalc = WDay + 1 if WDay < 6 else 0
+
+	return WeekdayCalc
+	
 def SetWindowIcon(Window):
 	Window.set_icon(GdkPixbuf.Pixbuf.new_from_file('lament.png'))
 	
