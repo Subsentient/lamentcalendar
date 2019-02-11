@@ -164,14 +164,14 @@ class DayView(Gtk.Window):
 		self.VBox.pack_start(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), False, True, 0)
 		
 		self.WindowView = Gtk.ScrolledWindow.new()
-		
+		self.WindowView.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 		WindowViewAlign = Gtk.Alignment.new(0.0, 0.0, 1.0, 1.0)
 		WindowViewAlign.add(self.WindowView)
 		self.VBox.pack_start(WindowViewAlign, True, True, 8)
 		
 		self.WindowViewBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 		
-		self.WindowView.add(self.WindowViewBox)
+		self.WindowView.add_with_viewport(self.WindowViewBox)
 		
 		for Value in DayList:
 			self.AddItem(Value)
@@ -212,7 +212,7 @@ class DayView(Gtk.Window):
 		HBox.pack_start(ButtonAlign, True, True, 0)
 	
 		
-		self.WindowViewBox.pack_start(HBox, True, False, 0)
+		self.WindowViewBox.pack_start(HBox, False, True, 0)
 		self.WindowViewBox.pack_start(Gtk.Separator(), False, True, 0)
 
 	def Wipe(self):
