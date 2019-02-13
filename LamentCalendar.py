@@ -11,6 +11,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 										'dayclick': (self.OnDayClick,),
 										'newitem' : (self.NewItemClicked,),
 										'listallclicked' : (self.OnListAllClick,),
+										'sendtotrayclicked' : (self.OnSendToTrayClick,),
 										'reloaddbclicked' : (self.OnReloadDBClick,) }
 								)
 		Dates = [*self.Calendar.get_date()]
@@ -23,6 +24,9 @@ class PrimaryLoopObj(GUI.MainWindow):
 
 	def OnReloadDBClick(self, *Unused):
 		self.DB.LoadDB()
+		
+	def OnSendToTrayClick(self, *Unused):
+		self.hide()
 		
 	def OnListAllClick(self, *Unused):
 		DayList = [self.DB[Item] for Item in self.DB] #DBObject is iterable like a dict

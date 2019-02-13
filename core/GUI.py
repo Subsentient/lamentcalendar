@@ -74,16 +74,24 @@ class MainWindow(Gtk.Window):
 		#Populate file menu
 		self.QuitItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_QUIT)
 		self.QuitItem.connect('activate', self.TerminateApp)
+		
 		self.NewEventItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_NEW)
-		self.NewEventItem.set_label("New Event")
+		self.NewEventItem.set_label("_New Event")
 		self.NewEventItem.connect('activate', self.NewClicked)
+		
 		self.ReloadDBItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_REFRESH)
-		self.ReloadDBItem.set_label("Reload database")
+		self.ReloadDBItem.set_label("_Reload database")
 		self.ReloadDBItem.connect('activate', self.ReloadDBClicked)
 		
 		self.AllEventsItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_INDEX)
 		self.AllEventsItem.set_label('List _all events')
 		self.AllEventsItem.connect('activate', self.ListAllClicked)
+
+		self.MinimizeToTrayItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_CLOSE)
+		self.MinimizeToTrayItem.set_label("_Minimize to tray")
+		self.MinimizeToTrayItem.connect('activate', self.SendToTrayClicked)
+		
+		self.FileMenu.append(self.MinimizeToTrayItem)
 		self.FileMenu.append(self.NewEventItem)
 		self.FileMenu.append(self.AllEventsItem)
 		self.FileMenu.append(self.ReloadDBItem)
@@ -102,6 +110,10 @@ class MainWindow(Gtk.Window):
 	def TerminateApp(self, Widget):
 		sys.exit(0)
 		
+	def SendToTrayClicked(self, Widget):
+		if 'sendtotrayclicked' in self.Callbacks:
+			self.Callbacks['sendtotrayclicked'][0]('*', '*', '*', *self.Callbacks['sendtotrayclicked'][1:])
+			
 	def ReloadDBClicked(self, Widget):
 		if 'reloaddbclicked' in self.Callbacks:
 			self.Callbacks['reloaddbclicked'][0]('*', '*', '*', *self.Callbacks['reloaddbclicked'][1:])
@@ -463,17 +475,15 @@ class TrayIconObject(Gtk.StatusIcon):
 		self.set_from_file('lament.png')
 		self.set_visible(True)
 		self.set_has_tooltip(True)
-		if MainObj:
-			self.WindowVisible = MainObj.is_visible()
+
 		self.connect('activate', self.OnClick)
 		
 	def OnClick(self, *Unused):
 		if not self.MainObj:
 			return
-		if self.WindowVisible:
+		if self.MainObj.is_visible():
 			self.MainObj.hide()
 		else:
 			self.MainObj.show_all()
-		if self.MainObj:
-			self.WindowVisible = not self.WindowVisible
+
 
