@@ -26,7 +26,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 		
 	def OnListAllClick(self, *Unused):
 		DayList = [self.DB[Item] for Item in self.DB] #DBObject is iterable like a dict
-
+		DayList.sort(key = lambda k : k['name'].lower())
+		
 		DayViewObj = GUI.DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick, self),
 															'newclicked' : (self.OnNewButtonClick, self) } )
 		DayViewObj.show_all()

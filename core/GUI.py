@@ -81,7 +81,8 @@ class MainWindow(Gtk.Window):
 		self.ReloadDBItem.set_label("Reload database")
 		self.ReloadDBItem.connect('activate', self.ReloadDBClicked)
 		
-		self.AllEventsItem = Gtk.MenuItem.new_with_mnemonic('List _all events')
+		self.AllEventsItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_INDEX)
+		self.AllEventsItem.set_label('List _all events')
 		self.AllEventsItem.connect('activate', self.ListAllClicked)
 		self.FileMenu.append(self.NewEventItem)
 		self.FileMenu.append(self.AllEventsItem)
