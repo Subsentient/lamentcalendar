@@ -53,11 +53,8 @@ class DBObject(object):
 		if NeedInit:
 			if not self.SetupDB(FilePath):
 				raise RuntimeError('Unable to setup new database at ' + FilePath + '!')
-
-		self.Data = self.GetList()
-
-		if type(self.Data) is not dict:
-			raise RuntimeError('SQlite database opened, but unable to load contents to memory!')
+		self.LoadDB()
+		
 	def __del__(self):
 		self.Conn.commit()
 		self.Conn.close()
@@ -87,7 +84,12 @@ class DBObject(object):
 
 	def __len__(self):
 		return len(self.Data)
-	
+	def LoadDB(self):
+		self.Data = self.GetList()
+
+		if type(self.Data) is not dict:
+			raise RuntimeError('SQlite database opened, but unable to load contents to memory!')
+
 	def SetupDB(self, FilePath):
 		Cursor = self.Conn.cursor()
 

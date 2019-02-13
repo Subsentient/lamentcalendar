@@ -77,11 +77,15 @@ class MainWindow(Gtk.Window):
 		self.NewEventItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_NEW)
 		self.NewEventItem.set_label("New Event")
 		self.NewEventItem.connect('activate', self.NewClicked)
+		self.ReloadDBItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_REFRESH)
+		self.ReloadDBItem.set_label("Reload database")
+		self.ReloadDBItem.connect('activate', self.ReloadDBClicked)
 		
 		self.AllEventsItem = Gtk.MenuItem.new_with_mnemonic('List _all events')
 		self.AllEventsItem.connect('activate', self.ListAllClicked)
 		self.FileMenu.append(self.NewEventItem)
 		self.FileMenu.append(self.AllEventsItem)
+		self.FileMenu.append(self.ReloadDBItem)
 		self.FileMenu.append(self.QuitItem)
 
 
@@ -97,6 +101,10 @@ class MainWindow(Gtk.Window):
 	def TerminateApp(self, Widget):
 		sys.exit(0)
 		
+	def ReloadDBClicked(self, Widget):
+		if 'reloaddbclicked' in self.Callbacks:
+			self.Callbacks['reloaddbclicked'][0]('*', '*', '*', *self.Callbacks['reloaddbclicked'][1:])
+			
 	def ListAllClicked(self, Widget):
 		if 'listallclicked' in self.Callbacks:
 			self.Callbacks['listallclicked'][0]('*', '*', '*', *self.Callbacks['listallclicked'][1:])
