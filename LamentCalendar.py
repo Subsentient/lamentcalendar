@@ -32,15 +32,15 @@ class PrimaryLoopObj(GUI.MainWindow):
 		DayList = [self.DB[Item] for Item in self.DB] #DBObject is iterable like a dict
 		DayList.sort(key = lambda k : k['name'].lower())
 		
-		DayViewObj = GUI.DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick, self),
-															'newclicked' : (self.OnNewButtonClick, self) } )
+		DayViewObj = GUI.DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick,),
+															'newclicked' : (self.OnNewButtonClick,) } )
 		DayViewObj.show_all()
 		
 	def OnDayClick(self, Year, Month, Day):
 		DayList = self.DB.SearchByDate(Year, Month, Day, GUI.GetWeekdayFromDate(Year, Month, Day))
 		
-		DayViewObj = GUI.DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick, self),\
-															'newclicked' : (self.OnNewButtonClick, self) })
+		DayViewObj = GUI.DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick,),\
+															'newclicked' : (self.OnNewButtonClick,) })
 		DayViewObj.show_all()
 		
 	def OnMonthChange(self, Year, Month, Day):
@@ -59,49 +59,45 @@ class PrimaryLoopObj(GUI.MainWindow):
 		Year, Month, Day = self.Calendar.get_date()
 		Month += 1
 
-		EventObj = GUI.EventView(DB.NewEmptyItem(), { 'saveclose' : (self.OnSaveClick, self, None), \
-													'delclose' : (self.OnSaveClick, self, None) } )
+		EventObj = GUI.EventView(DB.NewEmptyItem(), { 'saveclose' : (self.OnSaveClick, None), \
+													'delclose' : (self.OnSaveClick, None) } )
 		EventObj.show_all()
 		
-	@staticmethod
-	def OnSaveClick(Dict, OriginalName, ForcedSelf, DayViewDialog):
-		if OriginalName != Dict['name'] and OriginalName in ForcedSelf.DB:
-			del ForcedSelf.DB[OriginalName]
+	def OnSaveClick(self, Dict, OriginalName, DayViewDialog):
+		if OriginalName != Dict['name'] and OriginalName in self.DB:
+			del self.DB[OriginalName]
 			
-		ForcedSelf.DB[Dict['name']] = Dict
+		self.DB[Dict['name']] = Dict
 		
 		if DayViewDialog:
 			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
 				WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
 			else:
 				WDay = '*'
-			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
+			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
 		
-	@staticmethod
-	def OnDeleteClick(Dict, OriginalName, ForcedSelf, DayViewDialog):
-		if not OriginalName in ForcedSelf.DB:
+	def OnDeleteClick(self, Dict, OriginalName, DayViewDialog):
+		if not OriginalName in self.DB:
 			return
 
-		del ForcedSelf.DB[OriginalName]
+		del self.DB[OriginalName]
 		
 		if DayViewDialog:
 			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
 				WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
 			else:
 				WDay = '*'
-			DayViewDialog.Repopulate(ForcedSelf.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
+			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
 
-	@staticmethod
-	def OnEditClick(Widget, EventName, DayViewDialog, ForcedSelf):
-		CallbackDict = { 'saveclose' : (ForcedSelf.OnSaveClick, ForcedSelf, DayViewDialog),
-						'delclose' : (ForcedSelf.OnDeleteClick, ForcedSelf, DayViewDialog) }
-		EventObj = GUI.EventView(ForcedSelf.DB[EventName], CallbackDict)
+	def OnEditClick(self, Widget, EventName, DayViewDialog):
+		CallbackDict = { 'saveclose' : (self.OnSaveClick, DayViewDialog),
+						'delclose' : (self.OnDeleteClick, DayViewDialog) }
+		EventObj = GUI.EventView(self.DB[EventName], CallbackDict)
 		EventObj.show_all()
 
-	@staticmethod
-	def OnNewButtonClick(Widget, EventName, DayViewDialog, ForcedSelf):
-		CallbackDict = { 'saveclose' : (ForcedSelf.OnSaveClick, ForcedSelf, DayViewDialog),
-						'delclose' : (ForcedSelf.OnDeleteClick, ForcedSelf, DayViewDialog) }
+	def OnNewButtonClick(self, Widget, EventName, DayViewDialog):
+		CallbackDict = { 'saveclose' : (self.OnSaveClick, DayViewDialog),
+						'delclose' : (self.OnDeleteClick, DayViewDialog) }
 		TempObj = DB.NewEmptyItem()
 		
 		TempObj['name'] = 'New Event'
@@ -153,7 +149,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 																		Msg,
 																		Item['alert_file'] if Item['alert_file'] != 'null' else None,
 																		int(Item['repeat_alarm_sound']),
-																		callback=self.__class__.DismissNotification,
+																		callback=self.DismissNotification,
 																		instancename=Item['name'],
 																		mainobj=self)
 		NotifObj.show_all()

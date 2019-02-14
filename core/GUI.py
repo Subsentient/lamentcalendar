@@ -420,7 +420,6 @@ class Notification(Gtk.Window):
 
 		self.MsgHBox = Gtk.Box.new(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 
-
 		self.Icon = Gtk.Image.new_from_icon_name('appointment-soon', Gtk.IconSize.DIALOG)
 		
 		self.MsgHBox.pack_start(self.Icon, False, True, 8)
@@ -441,7 +440,7 @@ class Notification(Gtk.Window):
 		self.SnoozeButton = Gtk.Button.new_with_mnemonic("_Snooze")
 		self.SnoozeButton.set_sensitive(False) #Snooze not yet implemented
 		self.DismissButton = Gtk.Button.new_with_mnemonic("_Dismiss")
-		self.DismissButton.connect('clicked', self.__class__.DismissClicked, self, Extra)
+		self.DismissButton.connect('clicked', self.DismissClicked, Extra)
 		SnoozeAlign.add(self.SnoozeButton)
 		DismissAlign.add(self.DismissButton)
 
@@ -453,11 +452,10 @@ class Notification(Gtk.Window):
 		else:
 			self.AlertObject = None
 
-	@staticmethod
-	def DismissClicked(Button, ForcedSelf, Extra):
-		del ForcedSelf.AlertObject
+	def DismissClicked(self, Button, Extra):
+		del self.AlertObject
 		
-		ForcedSelf.destroy()
+		self.destroy()
 
 		if 'callback' in Extra:
 			Extra['callback'](**Extra)
