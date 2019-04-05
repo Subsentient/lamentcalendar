@@ -3,6 +3,8 @@ import pygame
 pygame.init()
 pygame.mixer.init()
 
+Silenced = False
+
 class AudioEvent(object):
 	CurChannel = -1
 	AllocatedChannels = pygame.mixer.get_num_channels()
@@ -26,7 +28,8 @@ class AudioEvent(object):
 		self.SoundObj = pygame.mixer.Sound(AudioFile)
 		self.ChannelDesc = pygame.mixer.Channel(self.ChannelNum)
 		
-		self.ChannelDesc.play(self.SoundObj, -1 if Loop else 0)
+		if not Silenced:
+			self.ChannelDesc.play(self.SoundObj, -1 if Loop else 0)
 
 	def __del__(self):
 		if self.ChannelDesc.get_busy():
@@ -41,3 +44,10 @@ class AudioEvent(object):
 			cls.CurChannel = -1
 			cls.AllocatedChannels = 8
 		
+
+def GetSilenced():
+	return Silenced
+	
+def SetSilenced(State):
+	global Silenced
+	Silenced = State

@@ -30,14 +30,14 @@ long_line_column=72
 [files]
 current_page=2
 FILE_NAME_0=9427;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fdb.cpp;0;4
-FILE_NAME_1=1999;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2FLamentCalendar.py;0;4
-FILE_NAME_2=3997;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGUI.py;0;4
+FILE_NAME_1=4511;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2FLamentCalendar.py;0;4
+FILE_NAME_2=660;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGUI.py;0;4
 FILE_NAME_3=2436;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fcontrol%2Fgui_mainwindow.cpp;0;4
-FILE_NAME_4=3018;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDB.py;0;4
+FILE_NAME_4=4872;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDB.py;0;4
 FILE_NAME_5=881;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FAlert.py;0;4
 
 [VTE]
-last_dir=/home/ben/workspace/lamentcalendar/core
+last_dir=/home/ben/workspace/lamentcalendar
 
 [build-menu]
 EX_00_LB=_Execute

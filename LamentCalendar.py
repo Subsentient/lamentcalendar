@@ -155,9 +155,13 @@ class PrimaryLoopObj(GUI.MainWindow):
 		NotifObj.show_all()
 
 		return True
+
+if '--silence' in sys.argv:
+	Alert.SetSilenced(True)
 		
 MainObj = PrimaryLoopObj()
-if len(sys.argv) < 2 or sys.argv[1] != '--tray':
+
+if '--tray' not in sys.argv:
 	MainObj.show_all()
 
 TrayIcon = GUI.TrayIconObject(MainObj)

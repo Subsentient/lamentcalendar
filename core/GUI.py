@@ -90,8 +90,13 @@ class MainWindow(Gtk.Window):
 		self.MinimizeToTrayItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_CLOSE)
 		self.MinimizeToTrayItem.set_label("_Minimize to tray")
 		self.MinimizeToTrayItem.connect('activate', self.SendToTrayClicked)
+
+		self.SilenceItem = Gtk.CheckMenuItem.new_with_mnemonic("_Silence alarms")
+		self.SilenceItem.set_active(Alert.GetSilenced())
+		self.SilenceItem.connect('activate', self.SilenceToggled)
 		
 		self.FileMenu.append(self.MinimizeToTrayItem)
+		self.FileMenu.append(self.SilenceItem)
 		self.FileMenu.append(self.NewEventItem)
 		self.FileMenu.append(self.AllEventsItem)
 		self.FileMenu.append(self.ReloadDBItem)
@@ -109,6 +114,10 @@ class MainWindow(Gtk.Window):
 
 	def TerminateApp(self, Widget):
 		sys.exit(0)
+	def SilenceToggled(self, MenuItem):
+		OldState = Alert.GetSilenced()
+		Alert.SetSilenced(not OldState)
+		MenuItem.set_active(not OldState)
 		
 	def SendToTrayClicked(self, Widget):
 		if 'sendtotrayclicked' in self.Callbacks:
