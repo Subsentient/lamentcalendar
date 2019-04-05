@@ -43,6 +43,10 @@ class AudioEvent(object):
 			pygame.mixer.set_num_channels(8)
 			cls.CurChannel = -1
 			cls.AllocatedChannels = 8
+	def Pause(self):
+		self.ChannelDesc.pause()
+	def Unpause(self):
+		self.ChannelDesc.unpause()
 		
 
 def GetSilenced():

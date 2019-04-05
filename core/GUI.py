@@ -10,6 +10,7 @@ import Alert
 from datetime import date
 
 Weekdays = { 0 : 'Sun', 1 : 'Mon', 2 : 'Tue', 3 : 'Wed', 4 : 'Thu', 5 : 'Fri', 6 : 'Sat' }
+Notifications = []
 
 def GetWeekdayFromDate(Year, Month, Day):
 	Year, Month, Day = int(Year), int(Month), int(Day)
@@ -114,10 +115,17 @@ class MainWindow(Gtk.Window):
 
 	def TerminateApp(self, Widget):
 		sys.exit(0)
+		
 	def SilenceToggled(self, MenuItem):
 		OldState = Alert.GetSilenced()
 		Alert.SetSilenced(not OldState)
 		MenuItem.set_active(not OldState)
+
+		Methods = (Alert.AudioEvent.Unpause, Alert.AudioEvent.Pause)
+
+		for Notification in Notifications:
+			Methods[not OldState](Notification.AlertObject)
+
 		
 	def SendToTrayClicked(self, Widget):
 		if 'sendtotrayclicked' in self.Callbacks:
@@ -455,14 +463,21 @@ class Notification(Gtk.Window):
 
 		self.ButtonHBox.pack_start(SnoozeAlign, True, True, 8)
 		self.ButtonHBox.pack_start(DismissAlign, True, True, 8)
-
+		self.connect('delete-event', self.DismissClicked, Extra)
+		
 		if AudioFile:
 			self.AlertObject = Alert.AudioEvent(AudioFile, Loop)
 		else:
 			self.AlertObject = None
 
+		Notifications.append(self)
+		
 	def DismissClicked(self, Button, Extra):
-		del self.AlertObject
+		try:
+			del self.AlertObject
+		except:
+			pass
+		Notifications.remove(self)
 		
 		self.destroy()
 
@@ -493,4 +508,6 @@ class TrayIconObject(Gtk.StatusIcon):
 		else:
 			self.MainObj.show_all()
 
+def GetRunningNotifications():
+	return Notifications
 

@@ -2,6 +2,7 @@
 import sys, time
 sys.path.append('core')
 import GUI, DB, Alert
+import signal
 
 class PrimaryLoopObj(GUI.MainWindow):
 	DB_FILEPATH = 'events.db'
@@ -21,6 +22,9 @@ class PrimaryLoopObj(GUI.MainWindow):
 
 		self.OnMonthChange(*Dates)
 		self.Notifications = {}
+
+		signal.signal(signal.SIGUSR1, self.SilenceSignalHandler)
+		
 
 	def OnReloadDBClick(self, *Unused):
 		self.DB.LoadDB()
@@ -155,6 +159,12 @@ class PrimaryLoopObj(GUI.MainWindow):
 		NotifObj.show_all()
 
 		return True
+	def SilenceSignalHandler(self, *Discarded):
+		State = not Alert.GetSilenced()
+		
+		self.SilenceItem.set_active(State)
+		
+
 
 if '--silence' in sys.argv:
 	Alert.SetSilenced(True)
