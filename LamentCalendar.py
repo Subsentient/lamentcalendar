@@ -24,6 +24,8 @@ class PrimaryLoopObj(GUI.MainWindow):
 		self.Notifications = {}
 
 		signal.signal(signal.SIGUSR1, self.SilenceSignalHandler)
+		signal.signal(signal.SIGTERM, lambda dis, carded : sys.exit(0))
+		signal.signal(signal.SIGINT, lambda dis, carded : sys.exit(0))
 		
 
 	def OnReloadDBClick(self, *Unused):
