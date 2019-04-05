@@ -24,6 +24,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		self.Notifications = {}
 
 		signal.signal(signal.SIGUSR1, self.SilenceSignalHandler)
+		signal.signal(signal.SIGUSR2, self.DismissAllSignalHandler)
 		signal.signal(signal.SIGTERM, lambda dis, carded : sys.exit(0))
 		signal.signal(signal.SIGINT, lambda dis, carded : sys.exit(0))
 		
@@ -161,12 +162,14 @@ class PrimaryLoopObj(GUI.MainWindow):
 		NotifObj.show_all()
 
 		return True
+		
 	def SilenceSignalHandler(self, *Discarded):
-		State = not Alert.GetSilenced()
+		self.SilenceItem.set_active(not Alert.GetSilenced())
 		
-		self.SilenceItem.set_active(State)
-		
-
+	def DismissAllSignalHandler(self, *Discarded):
+		for Key in dict(self.Notifications): #Shallow copy because you can't iterate over it if you're deleting elements.
+			Obj = self.Notifications[Key]
+			Obj.DismissClicked(None, Obj.Extra)
 
 if '--silence' in sys.argv:
 	Alert.SetSilenced(True)

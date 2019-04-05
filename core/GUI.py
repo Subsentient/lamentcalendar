@@ -10,7 +10,6 @@ import Alert
 from datetime import date
 
 Weekdays = { 0 : 'Sun', 1 : 'Mon', 2 : 'Tue', 3 : 'Wed', 4 : 'Thu', 5 : 'Fri', 6 : 'Sat' }
-Notifications = []
 
 def GetWeekdayFromDate(Year, Month, Day):
 	Year, Month, Day = int(Year), int(Month), int(Day)
@@ -123,8 +122,8 @@ class MainWindow(Gtk.Window):
 
 		Methods = (Alert.AudioEvent.Unpause, Alert.AudioEvent.Pause)
 
-		for Notification in Notifications:
-			Methods[not OldState](Notification.AlertObject)
+		for Key in self.Notifications:
+			Methods[not OldState](self.Notifications[Key].AlertObject)
 
 		
 	def SendToTrayClicked(self, Widget):
@@ -428,7 +427,7 @@ class Notification(Gtk.Window):
 	def __init__(self, Title, Message, AudioFile = None, Loop = False, **Extra):
 		Gtk.Window.__init__(self, title=Title)
 		SetWindowIcon(self)
-		
+		self.Extra = Extra
 		self.set_default_size(400, 150)
 		self.VBox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=8)
 		self.add(self.VBox)
@@ -470,14 +469,11 @@ class Notification(Gtk.Window):
 		else:
 			self.AlertObject = None
 
-		Notifications.append(self)
-		
 	def DismissClicked(self, Button, Extra):
 		try:
 			del self.AlertObject
 		except:
 			pass
-		Notifications.remove(self)
 		
 		self.destroy()
 
