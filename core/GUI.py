@@ -118,7 +118,6 @@ class MainWindow(Gtk.Window):
 	def SilenceToggled(self, MenuItem):
 		OldState = Alert.GetSilenced()
 		Alert.SetSilenced(not OldState)
-		MenuItem.set_active(not OldState)
 
 		Methods = (Alert.AudioEvent.Unpause, Alert.AudioEvent.Pause)
 
