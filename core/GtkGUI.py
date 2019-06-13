@@ -6,45 +6,11 @@ import sys, os
 
 from DB import Fields, FieldType
 
-import Alert
-from datetime import date
+import Audio, DateCalc
 
-Weekdays = { 0 : 'Sun', 1 : 'Mon', 2 : 'Tue', 3 : 'Wed', 4 : 'Thu', 5 : 'Fri', 6 : 'Sat' }
-
-def GetWeekdayFromDate(Year, Month, Day):
-	Year, Month, Day = int(Year), int(Month), int(Day)
-	
-	WDay = date(Year, Month, Day).weekday()
-	
-	WeekdayCalc = WDay + 1 if WDay < 6 else 0
-
-	return WeekdayCalc
 	
 def SetWindowIcon(Window):
 	Window.set_icon(GdkPixbuf.Pixbuf.new_from_file('lament.png'))
-	
-def DoubleDigitFormat(String):
-	List = String.split(',')
-
-	for Inc, Item in enumerate(List):
-		List[Inc] = '0' + Item if len(Item) == 1 and Item != '*' else Item
-
-	return ','.join(List)
-
-def WeekdayFormat(String):
-	List = String.split(',')
-
-	for Inc, Item in enumerate(List):
-		if Item == '*': continue
-
-		assert Item.isdigit()
-		if int(Item) not in Weekdays:
-			print('WARNING: No weekday with numeric value ' + Item + ' exists.')
-			continue
-
-		List[Inc] = Weekdays[int(Item)]
-
-	return ','.join(List)
 
 class MainWindow(Gtk.Window):
 	def __init__(self, Callbacks={}): #Yes, the same static-initialized list is indeed what we want.
@@ -92,7 +58,7 @@ class MainWindow(Gtk.Window):
 		self.MinimizeToTrayItem.connect('activate', self.SendToTrayClicked)
 
 		self.SilenceItem = Gtk.CheckMenuItem.new_with_mnemonic("_Silence alarms")
-		self.SilenceItem.set_active(Alert.GetSilenced())
+		self.SilenceItem.set_active(Audio.GetSilenced())
 		self.SilenceItem.connect('activate', self.SilenceToggled)
 		
 		self.FileMenu.append(self.MinimizeToTrayItem)
@@ -116,13 +82,13 @@ class MainWindow(Gtk.Window):
 		sys.exit(0)
 		
 	def SilenceToggled(self, MenuItem):
-		OldState = Alert.GetSilenced()
-		Alert.SetSilenced(not OldState)
+		OldState = Audio.GetSilenced()
+		Audio.SetSilenced(not OldState)
 
-		Methods = (Alert.AudioEvent.Unpause, Alert.AudioEvent.Pause)
+		Methods = (Audio.AudioEvent.Unpause, Audio.AudioEvent.Pause)
 
 		for Key in self.Notifications:
-			Methods[not OldState](self.Notifications[Key].AlertObject)
+			Methods[not OldState](self.Notifications[Key].Noisemaker)
 
 		
 	def SendToTrayClicked(self, Widget):
@@ -172,8 +138,8 @@ class DayView(Gtk.Window):
 		self.Year, self.Month, self.Day = str(Year), str(Month), str(Day)
 		
 		Gtk.Window.__init__(self, title='Events for ' + str(Year) + '-' +\
-		DoubleDigitFormat(str(Month)) + '-' + \
-		DoubleDigitFormat(str(Day)))
+		DateCalc.DoubleDigitFormat(str(Month)) + '-' + \
+		DateCalc.DoubleDigitFormat(str(Day)))
 		SetWindowIcon(self)
 
 		self.set_default_size(500, 300)
@@ -222,15 +188,15 @@ class DayView(Gtk.Window):
 		HBox.pack_start(Label, False, False, 4)
 		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 4)
 	
-		TimeString = DoubleDigitFormat(Value['hours']) + ':' + DoubleDigitFormat(Value['minutes'])
+		TimeString = DateCalc.DoubleDigitFormat(Value['hours']) + ':' + DateCalc.DoubleDigitFormat(Value['minutes'])
 		
 		HBox.pack_start(Gtk.Label(TimeString), False, False, 0)
 		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 8)
 
-		DateString = '<span foreground="#00cccc">' + DoubleDigitFormat(Value['year']) + '</span>-' + \
-					'<span foreground="#00cc00">' + DoubleDigitFormat(Value['month']) + '</span>-' +\
-					'<span foreground="#cccc00">' + DoubleDigitFormat(Value['day']) + '</span>   ' + \
-					'<b>' + WeekdayFormat(Value['weekday']) + '</b>'
+		DateString = '<span foreground="#00cccc">' + DateCalc.DoubleDigitFormat(Value['year']) + '</span>-' + \
+					'<span foreground="#00cc00">' + DateCalc.DoubleDigitFormat(Value['month']) + '</span>-' +\
+					'<span foreground="#cccc00">' + DateCalc.DoubleDigitFormat(Value['day']) + '</span>   ' + \
+					'<b>' + DateCalc.WeekdayFormat(Value['weekday']) + '</b>'
 
 		DateLabel = Gtk.Label.new()
 		DateLabel.set_markup(DateString)
@@ -464,13 +430,15 @@ class Notification(Gtk.Window):
 		self.connect('delete-event', self.DismissClicked, Extra)
 		
 		if AudioFile:
-			self.AlertObject = Alert.AudioEvent(AudioFile, Loop)
+			self.Noisemaker = Audio.AudioEvent(AudioFile, Loop)
+			self.Noisemaker.Play()
 		else:
-			self.AlertObject = None
+			self.Noisemaker = None
 
 	def DismissClicked(self, Button, Extra):
 		try:
-			del self.AlertObject
+			self.Noisemaker.Stop()
+			del self.Noisemaker
 		except:
 			pass
 		
@@ -502,7 +470,4 @@ class TrayIconObject(Gtk.StatusIcon):
 			self.MainObj.hide()
 		else:
 			self.MainObj.show_all()
-
-def GetRunningNotifications():
-	return Notifications
 

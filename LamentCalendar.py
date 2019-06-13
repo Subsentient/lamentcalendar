@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 import sys, time
 sys.path.append('core')
-import GUI, DB, Alert
+import GtkGUI, DB, Audio, DateCalc
 import signal
 
-class PrimaryLoopObj(GUI.MainWindow):
+class PrimaryLoopObj(GtkGUI.MainWindow):
 	DB_FILEPATH = 'events.db'
 	
 	def __init__(self):
-		GUI.MainWindow.__init__(self, {'monthchanged' : (self.OnMonthChange,),
+		GtkGUI.MainWindow.__init__(self, {'monthchanged' : (self.OnMonthChange,),
 										'dayclick': (self.OnDayClick,),
 										'newitem' : (self.NewItemClicked,),
 										'listallclicked' : (self.OnListAllClick,),
@@ -39,14 +39,14 @@ class PrimaryLoopObj(GUI.MainWindow):
 		DayList = [self.DB[Item] for Item in self.DB] #DBObject is iterable like a dict
 		DayList.sort(key = lambda k : k['name'].lower())
 		
-		DayViewObj = GUI.DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick,),
+		DayViewObj = GtkGUI.DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick,),
 															'newclicked' : (self.OnNewButtonClick,) } )
 		DayViewObj.show_all()
 		
 	def OnDayClick(self, Year, Month, Day):
-		DayList = self.DB.SearchByDate(Year, Month, Day, GUI.GetWeekdayFromDate(Year, Month, Day))
+		DayList = self.DB.SearchByDate(Year, Month, Day, DateCalc.GetWeekdayFromDate(Year, Month, Day))
 		
-		DayViewObj = GUI.DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick,),\
+		DayViewObj = GtkGUI.DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick,),\
 															'newclicked' : (self.OnNewButtonClick,) })
 		DayViewObj.show_all()
 		
@@ -66,7 +66,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		Year, Month, Day = self.Calendar.get_date()
 		Month += 1
 
-		EventObj = GUI.EventView(DB.NewEmptyItem(), { 'saveclose' : (self.OnSaveClick, None), \
+		EventObj = GtkGUI.EventView(DB.NewEmptyItem(), { 'saveclose' : (self.OnSaveClick, None), \
 													'delclose' : (self.OnSaveClick, None) } )
 		EventObj.show_all()
 		
@@ -78,7 +78,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		
 		if DayViewDialog:
 			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
-				WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+				WDay = DateCalc.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
 			else:
 				WDay = '*'
 			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
@@ -91,7 +91,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		
 		if DayViewDialog:
 			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
-				WDay = GUI.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+				WDay = DateCalc.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
 			else:
 				WDay = '*'
 			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
@@ -99,7 +99,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 	def OnEditClick(self, Widget, EventName, DayViewDialog):
 		CallbackDict = { 'saveclose' : (self.OnSaveClick, DayViewDialog),
 						'delclose' : (self.OnDeleteClick, DayViewDialog) }
-		EventObj = GUI.EventView(self.DB[EventName], CallbackDict)
+		EventObj = GtkGUI.EventView(self.DB[EventName], CallbackDict)
 		EventObj.show_all()
 
 	def OnNewButtonClick(self, Widget, EventName, DayViewDialog):
@@ -111,7 +111,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		
 		TempObj['year'], TempObj['month'], TempObj['day'] = str(DayViewDialog.Year), str(DayViewDialog.Month), str(DayViewDialog.Day)
 		
-		EventObj = GUI.EventView(TempObj, CallbackDict)
+		EventObj = GtkGUI.EventView(TempObj, CallbackDict)
 		EventObj.show_all()
 
 	@staticmethod
@@ -152,7 +152,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		Msg = 'Time activation triggered for event "{0}" on '.format(Item['name']) + time.ctime() \
 				+ '\nEvent description:\n\n' + Item['description']
 
-		self.Notifications[Item['name']] = NotifObj = GUI.Notification(Title,
+		self.Notifications[Item['name']] = NotifObj = GtkGUI.Notification(Title,
 																		Msg,
 																		Item['alert_file'] if Item['alert_file'] != 'null' else None,
 																		int(Item['repeat_alarm_sound']),
@@ -164,7 +164,7 @@ class PrimaryLoopObj(GUI.MainWindow):
 		return True
 		
 	def SilenceSignalHandler(self, *Discarded):
-		self.SilenceItem.set_active(not Alert.GetSilenced())
+		self.SilenceItem.set_active(not Audio.GetSilenced())
 		
 	def DismissAllSignalHandler(self, *Discarded):
 		for Key in dict(self.Notifications): #Shallow copy because you can't iterate over it if you're deleting elements.
@@ -172,15 +172,15 @@ class PrimaryLoopObj(GUI.MainWindow):
 			Obj.DismissClicked(None, Obj.Extra)
 
 if '--silence' in sys.argv:
-	Alert.SetSilenced(True)
+	Audio.SetSilenced(True)
 		
 MainObj = PrimaryLoopObj()
 
 if '--tray' not in sys.argv:
 	MainObj.show_all()
 
-TrayIcon = GUI.TrayIconObject(MainObj)
+TrayIcon = GtkGUI.TrayIconObject(MainObj)
 
-GUI.GLib.timeout_add(200, PrimaryLoopObj.CheckTimesFunc, MainObj)
+GtkGUI.GLib.timeout_add(200, PrimaryLoopObj.CheckTimesFunc, MainObj)
 
-GUI.Gtk.main()
+GtkGUI.Gtk.main()
