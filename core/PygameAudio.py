@@ -13,7 +13,7 @@ class AudioEvent(object):
 		if cls.CurChannel > cls.AllocatedChannels:
 			pygame.mixer.set_num_channels(cls.AllocatedChannels * 2)
 
-	def __init__(self, AudioFile, Loop):
+	def __init__(self, AudioFile):
 		cls = self.__class__
 		
 		cls.NumActive += 1
@@ -22,7 +22,6 @@ class AudioEvent(object):
 		cls.__CheckChannelAlloc()
 		
 		self.ChannelNum = cls.CurChannel
-
 		self.SoundObj = pygame.mixer.Sound(AudioFile)
 		self.ChannelDesc = pygame.mixer.Channel(self.ChannelNum)
 

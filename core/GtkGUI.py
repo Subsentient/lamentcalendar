@@ -430,8 +430,8 @@ class Notification(Gtk.Window):
 		self.connect('delete-event', self.DismissClicked, Extra)
 		
 		if AudioFile:
-			self.Noisemaker = Audio.AudioEvent(AudioFile, Loop)
-			self.Noisemaker.Play()
+			self.Noisemaker = Audio.AudioEvent(AudioFile)
+			self.Noisemaker.Play(Loop)
 		else:
 			self.Noisemaker = None
 
