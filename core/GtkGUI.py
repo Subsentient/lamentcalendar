@@ -2,10 +2,10 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
 from gi.repository import Gtk, GdkPixbuf, GLib
-import sys, os
+import sys, os, time
 
-from DB import Fields, FieldType
-
+from DB import FieldDBTypes, FieldType, FieldNames, ItemField
+import DB
 import Audio, DateCalc
 
 	
@@ -130,6 +130,124 @@ class MainWindow(Gtk.Window):
 
 	def UnmarkDay(self, Day):
 		self.Calendar.unmark_day(Day)
+		
+
+	def OnReloadDBClick(self, *Unused):
+		self.DB.LoadDB()
+		
+	def OnSendToTrayClick(self, *Unused):
+		self.hide()
+		
+	def OnListAllClick(self, *Unused):
+		DayList = [self.DB[Item] for Item in self.DB] #DBObject is iterable like a dict
+		DayList.sort(key = lambda k : k[DB.ItemField.NAME].lower())
+		
+		DayViewObj = DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick,),
+													'newclicked' : (self.OnNewButtonClick,) } )
+		DayViewObj.show_all()
+		
+	def OnDayClick(self, Year, Month, Day):
+		DayList = self.DB.SearchByDate(Year, Month, Day, DateCalc.GetWeekdayFromDate(Year, Month, Day))
+		
+		DayViewObj = DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick,),\
+														'newclicked' : (self.OnNewButtonClick,) })
+		DayViewObj.show_all()
+		
+	def OnMonthChange(self, Year, Month, Day):
+		self.Calendar.clear_marks()
+		
+		DayList = self.DB.SearchByDate(Year, Month, '*', '*')
+
+		for Event in DayList:
+			for Day in Event[DB.ItemField.DAY].split(','):
+				if not Day.isnumeric():
+					continue
+					
+				self.Calendar.mark_day(int(Day))
+
+	def NewItemClicked(self):
+		Year, Month, Day = self.Calendar.get_date()
+		Month += 1
+
+		EventObj = EventView(DB.NewEmptyItem(), { 'saveclose' : (self.OnSaveClick, None), \
+													'delclose' : (self.OnSaveClick, None) } )
+		EventObj.show_all()
+		
+	def OnSaveClick(self, Dict, OriginalName, DayViewDialog):
+		if OriginalName != Dict[DB.ItemField.NAME] and OriginalName in self.DB:
+			del self.DB[OriginalName]
+			
+		self.DB[Dict[DB.ItemField.NAME]] = Dict
+		
+		if DayViewDialog:
+			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
+				WDay = DateCalc.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			else:
+				WDay = '*'
+			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
+		
+	def OnDeleteClick(self, Dict, OriginalName, DayViewDialog):
+		if not OriginalName in self.DB:
+			return
+
+		del self.DB[OriginalName]
+		
+		if DayViewDialog:
+			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
+				WDay = DateCalc.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+			else:
+				WDay = '*'
+			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
+
+	def OnEditClick(self, Widget, EventName, DayViewDialog):
+		CallbackDict = { 'saveclose' : (self.OnSaveClick, DayViewDialog),
+						'delclose' : (self.OnDeleteClick, DayViewDialog) }
+		EventObj = EventView(self.DB[EventName], CallbackDict)
+		EventObj.show_all()
+
+	def OnNewButtonClick(self, Widget, EventName, DayViewDialog):
+		CallbackDict = { 'saveclose' : (self.OnSaveClick, DayViewDialog),
+						'delclose' : (self.OnDeleteClick, DayViewDialog) }
+		TempObj = DB.NewEmptyItem()
+		
+		TempObj[DB.ItemField.NAME] = 'New Event'
+		
+		TempObj[DB.ItemField.YEAR], TempObj[DB.ItemField.MONTH], TempObj[DB.ItemField.DAY] = str(DayViewDialog.Year), str(DayViewDialog.Month), str(DayViewDialog.Day)
+		
+		EventObj = EventView(TempObj, CallbackDict)
+		EventObj.show_all()
+
+
+	def DismissNotification(self, Name):
+		del self.Notifications[Name]
+		
+	def SpawnNotification(self, Item):
+		
+		if Item[DB.ItemField.NAME] in self.Notifications:
+			return False
+		
+		Title = 'Event "{0}" time activation triggered'.format(Item[DB.ItemField.NAME])
+		Msg = 'Time activation triggered for event "{0}" on '.format(Item[DB.ItemField.NAME]) + time.ctime() \
+				+ '\nEvent description:\n\n' + Item[ItemField.DESCRIPTION]
+
+		self.Notifications[Item[DB.ItemField.NAME]] = NotifObj = Notification(Title,
+																	Msg,
+																	Item[DB.ItemField.ALERTFILE] if Item[DB.ItemField.ALERTFILE] != 'null' else None,
+																	int(Item[DB.ItemField.REPEATALARM]),
+																	self.DismissNotification,
+																	Item[DB.ItemField.NAME])
+		NotifObj.show_all()
+
+		return True
+		
+	def SilenceSignalHandler(self, *Discarded):
+		self.SilenceItem.set_active(not Audio.GetSilenced())
+		
+	def DismissAllSignalHandler(self, *Discarded):
+		for Key in dict(self.Notifications): #Shallow copy because you can't iterate over it if you're deleting elements.
+			Obj = self.Notifications[Key]
+			Obj.DismissClicked()
+
 
 class DayView(Gtk.Window):
 	def __init__(self, Year, Month, Day, DayList, Callbacks={}):
@@ -181,22 +299,22 @@ class DayView(Gtk.Window):
 	def AddItem(self, Value):
 		Label = Gtk.Label.new()
 
-		Label.set_markup('<i>' + Value['name'] + '</i>')
+		Label.set_markup('<i>' + Value[DB.ItemField.NAME] + '</i>')
 		
 		HBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 		
 		HBox.pack_start(Label, False, False, 4)
 		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 4)
 	
-		TimeString = DateCalc.DoubleDigitFormat(Value['hours']) + ':' + DateCalc.DoubleDigitFormat(Value['minutes'])
+		TimeString = DateCalc.DoubleDigitFormat(Value[DB.ItemField.HOURS]) + ':' + DateCalc.DoubleDigitFormat(Value[DB.ItemField.MINUTES])
 		
 		HBox.pack_start(Gtk.Label(TimeString), False, False, 0)
 		HBox.pack_start(Gtk.Separator.new(Gtk.Orientation.VERTICAL), False, False, 8)
 
-		DateString = '<span foreground="#00cccc">' + DateCalc.DoubleDigitFormat(Value['year']) + '</span>-' + \
-					'<span foreground="#00cc00">' + DateCalc.DoubleDigitFormat(Value['month']) + '</span>-' +\
-					'<span foreground="#cccc00">' + DateCalc.DoubleDigitFormat(Value['day']) + '</span>   ' + \
-					'<b>' + DateCalc.WeekdayFormat(Value['weekday']) + '</b>'
+		DateString = '<span foreground="#00cccc">' + DateCalc.DoubleDigitFormat(Value[DB.ItemField.YEAR]) + '</span>-' + \
+					'<span foreground="#00cc00">' + DateCalc.DoubleDigitFormat(Value[DB.ItemField.MONTH]) + '</span>-' +\
+					'<span foreground="#cccc00">' + DateCalc.DoubleDigitFormat(Value[DB.ItemField.DAY]) + '</span>   ' + \
+					'<b>' + DateCalc.WeekdayFormat(Value[DB.ItemField.WEEKDAY]) + '</b>'
 
 		DateLabel = Gtk.Label.new()
 		DateLabel.set_markup(DateString)
@@ -209,7 +327,7 @@ class DayView(Gtk.Window):
 		ButtonAlign.add(Button)
 		
 		if 'editclicked' in self.Callbacks:
-			Button.connect('clicked', self.Callbacks['editclicked'][0], Value['name'], self, *self.Callbacks['editclicked'][1:])
+			Button.connect('clicked', self.Callbacks['editclicked'][0], Value[DB.ItemField.NAME], self, *self.Callbacks['editclicked'][1:])
 
 		HBox.pack_start(ButtonAlign, True, True, 0)
 	
@@ -247,39 +365,40 @@ class EventView(Gtk.Window):
 		
 	def __CreateField(self, k):
 		
-		if Fields[k] == FieldType.TEXT or Fields[k] == FieldType.TIMEFORMAT:
+		if FieldDBTypes[k] == FieldType.TEXT or FieldDBTypes[k] == FieldType.TIMEFORMAT:
 			self.Fields[k] = Gtk.Entry.new_with_buffer(Gtk.EntryBuffer.new(self.Data[k], -1))
 
-			IsText = Fields[k] == FieldType.TEXT
+			IsText = FieldDBTypes[k] == FieldType.TEXT
 			
 			self.HBoxes[k].pack_start(self.Fields[k], IsText, IsText, 8)
 			
-		elif Fields[k] == FieldType.FILEPATH:
+			#Time formats also have a checkbox.
+			if FieldDBTypes[k] == FieldType.TIMEFORMAT:
+				self.Checkboxes[k] = Gtk.CheckButton.new_with_label("All")
+			
+				self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 8)
+			
+		elif FieldDBTypes[k] == FieldType.FILEPATH:
 			Filename = self.Data[k] if self.Data[k] != 'null' else 'null'
 			self.Fields[k] = Gtk.Button.new_with_label(Filename if len(Filename) < 25 else Filename[:20] + '...')
 			self.Fields[k].connect('clicked', self.RunChooser, k)
 			self.Extra[k] = Filename
 			self.HBoxes[k].pack_start(self.Fields[k], True, False, 8)
 
-		elif Fields[k] == FieldType.BOOLEAN:
+		elif FieldDBTypes[k] == FieldType.BOOLEAN:
 			self.Fields[k] = Gtk.CheckButton.new()
 
 			self.HBoxes[k].pack_start(self.Fields[k], True, False, 8)
 			
-		#Time formats also have a checkbox.
-		if Fields[k] == FieldType.TIMEFORMAT:
-			self.Checkboxes[k] = Gtk.CheckButton().new_with_label("All")
-			
-			self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 8)
 
 
 	def __init__(self, EventDict, Callbacks={}):
-		assert 'name' in EventDict
+		assert DB.ItemField.NAME in EventDict
 		
-		self.OriginalName = EventDict['name']
+		self.OriginalName = EventDict[DB.ItemField.NAME]
 		self.Callbacks = Callbacks
 		
-		Gtk.Window.__init__(self, title='Event "' + EventDict['name'] + '"')
+		Gtk.Window.__init__(self, title='Event "' + EventDict[DB.ItemField.NAME] + '"')
 		
 		SetWindowIcon(self)
 
@@ -287,7 +406,7 @@ class EventView(Gtk.Window):
 		self.VBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 		self.add(self.VBox)
 
-		self.MainLabel = Gtk.Label.new('Configuration for event "' + EventDict['name'] + '":')
+		self.MainLabel = Gtk.Label.new('Configuration for event "' + EventDict[DB.ItemField.NAME] + '":')
 
 		self.VBox.pack_start(self.MainLabel, False, True, 8)
 
@@ -300,7 +419,7 @@ class EventView(Gtk.Window):
 		self.Data = EventDict
 		#Populate fields
 		for k in EventDict:
-			self.ItemLabels[k] = Gtk.Label.new(k.replace('_', ' ').capitalize())
+			self.ItemLabels[k] = Gtk.Label.new(FieldNames[k].replace('_', ' ').capitalize())
 			self.HBoxes[k] = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 
 			LabelAlign = Gtk.Alignment.new(0.0, 0.0, 0.1, 1.0)
@@ -313,12 +432,12 @@ class EventView(Gtk.Window):
 			self.VBox.pack_start(self.HBoxes[k], True, True, 8)
 
 			#Name field needs a separator
-			if Fields[k] == FieldType.TEXT:
+			if FieldDBTypes[k] == FieldType.TEXT:
 				self.VBox.pack_start(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL), True, True, 8)
 				continue
 				
 			#Time fields need a checkbox
-			if Fields[k] == FieldType.TIMEFORMAT:
+			if FieldDBTypes[k] == FieldType.TIMEFORMAT:
 				if EventDict[k] == '*':
 					self.Checkboxes[k].set_active(True)
 					self.AnyBoxClicked(self.Checkboxes[k], k)
@@ -326,7 +445,7 @@ class EventView(Gtk.Window):
 				self.HBoxes[k].pack_start(self.Checkboxes[k], False, False, 0)
 				self.Checkboxes[k].connect('toggled', self.AnyBoxClicked, k)
 
-			if Fields[k] == FieldType.BOOLEAN:
+			if FieldDBTypes[k] == FieldType.BOOLEAN:
 				self.Fields[k].set_active(int(EventDict[k]))
 				
 		#Bottom controls
@@ -367,18 +486,18 @@ class EventView(Gtk.Window):
 		Dict = self.Data
 
 		for k in self.Fields:
-			if Fields[k] == FieldType.TIMEFORMAT:
+			if FieldDBTypes[k] == FieldType.TIMEFORMAT:
 
 				if self.Checkboxes[k].get_active():
 					Value = '*'
 				else:
 					Value = self.Fields[k].get_buffer().get_text()
 
-			elif Fields[k] == FieldType.TEXT:
+			elif FieldDBTypes[k] == FieldType.TEXT:
 				Value = self.Fields[k].get_buffer().get_text()
-			elif Fields[k] == FieldType.FILEPATH:
+			elif FieldDBTypes[k] == FieldType.FILEPATH:
 				Value = self.Extra[k]
-			elif Fields[k] == FieldType.BOOLEAN:
+			elif FieldDBTypes[k] == FieldType.BOOLEAN:
 				Value = str(int(self.Fields[k].get_active()))
 				
 			Dict[k] = Value
@@ -389,10 +508,11 @@ class EventView(Gtk.Window):
 		self.destroy()
 
 class Notification(Gtk.Window):
-	def __init__(self, Title, Message, AudioFile = None, Loop = False, **Extra):
+	def __init__(self, Title, Message, AudioFile = None, Loop = False, Callback = None, *CallbackArgs):
 		Gtk.Window.__init__(self, title=Title)
 		SetWindowIcon(self)
-		self.Extra = Extra
+		self.Callback = Callback
+		self.CallbackArgs = CallbackArgs
 		self.set_default_size(400, 150)
 		self.VBox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=8)
 		self.add(self.VBox)
@@ -421,13 +541,13 @@ class Notification(Gtk.Window):
 		self.SnoozeButton = Gtk.Button.new_with_mnemonic("_Snooze")
 		self.SnoozeButton.set_sensitive(False) #Snooze not yet implemented
 		self.DismissButton = Gtk.Button.new_with_mnemonic("_Dismiss")
-		self.DismissButton.connect('clicked', self.DismissClicked, Extra)
+		self.DismissButton.connect('clicked', self.DismissClicked)
 		SnoozeAlign.add(self.SnoozeButton)
 		DismissAlign.add(self.DismissButton)
 
 		self.ButtonHBox.pack_start(SnoozeAlign, True, True, 8)
 		self.ButtonHBox.pack_start(DismissAlign, True, True, 8)
-		self.connect('delete-event', self.DismissClicked, Extra)
+		self.connect('delete-event', self.DismissClicked)
 		
 		if AudioFile:
 			self.Noisemaker = Audio.AudioEvent(AudioFile)
@@ -435,7 +555,7 @@ class Notification(Gtk.Window):
 		else:
 			self.Noisemaker = None
 
-	def DismissClicked(self, Button, Extra):
+	def DismissClicked(self, Button = None):
 		try:
 			self.Noisemaker.Stop()
 			del self.Noisemaker
@@ -444,8 +564,8 @@ class Notification(Gtk.Window):
 		
 		self.destroy()
 
-		if 'callback' in Extra:
-			Extra['callback'](**Extra)
+		if self.Callback:
+			self.Callback(*self.CallbackArgs)
 
 class TrayIconObject(Gtk.StatusIcon):
 	def __init__(self, MainObj = None):
