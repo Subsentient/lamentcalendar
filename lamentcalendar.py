@@ -2,7 +2,7 @@
 import sys, time
 sys.path.append('core')
 import GtkGUI, DB, Audio, DateCalc
-import signal
+import signal, traceback
 
 class PrimaryLoopObj(GtkGUI.MainWindow):
 	DB_FILEPATH = 'events.db'
@@ -27,17 +27,33 @@ class PrimaryLoopObj(GtkGUI.MainWindow):
 		signal.signal(signal.SIGUSR2, self.DismissAllSignalHandler)
 		signal.signal(signal.SIGTERM, lambda dis, carded : sys.exit(0))
 		signal.signal(signal.SIGINT, lambda dis, carded : sys.exit(0))
+	
+	def CheckTriggers(self, Callback, *Args):
+		try:
+			self.DB.CheckTriggers(Callback, *Args)
+		except:
+			BTDialog = GtkGUI.BacktraceDialog(traceback.format_exc())
+			BTDialog.show_all()
+			self.CheckTriggers = lambda *Discarded : None
 
-if '--silence' in sys.argv:
-	Audio.SetSilenced(True)
-		
-MainObj = PrimaryLoopObj()
-
-if '--tray' not in sys.argv:
-	MainObj.show_all()
-
-TrayIcon = GtkGUI.TrayIconObject(MainObj)
-
-GtkGUI.GLib.timeout_add(200, MainObj.DB.CheckTriggers, MainObj.SpawnNotification)
-
-GtkGUI.Gtk.main()
+def RunGTKApp():
+	if '--silence' in sys.argv:
+		Audio.SetSilenced(True)
+			
+	MainObj = PrimaryLoopObj()
+	
+	if '--tray' not in sys.argv:
+		MainObj.show_all()
+	
+	TrayIcon = GtkGUI.TrayIconObject(MainObj)
+	
+	GtkGUI.GLib.timeout_add(200, MainObj.CheckTriggers, MainObj.SpawnNotification)
+	
+	GtkGUI.Gtk.main()
+	
+try:
+	RunGTKApp()
+except:
+	BTDialog = GtkGUI.BacktraceDialog(traceback.format_exc())
+	BTDialog.show_all()
+	GtkGUI.Gtk.main()

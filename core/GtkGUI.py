@@ -567,6 +567,33 @@ class Notification(Gtk.Window):
 		if self.Callback:
 			self.Callback(*self.CallbackArgs)
 
+class BacktraceDialog(Gtk.Window):
+	def __init__(self, BacktraceString):
+		Gtk.Window.__init__(self, title='Error occurred in Lament Calendar GTK+')
+		
+		self.VBox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+		self.MsgHBox = Gtk.Box.new(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+		
+		self.Icon = Gtk.Image.new_from_stock('gtk-dialog-error', Gtk.IconSize.DIALOG)
+		self.Label = Gtk.Label.new('An error has occurred in Lament Calendar. This is likely a bug.\n\n' + BacktraceString)
+		
+		self.MsgHBox.pack_start(self.Icon, False, True, 8)
+		self.MsgHBox.pack_start(self.Label, False, True, 8)
+		
+
+		
+		self.DismissAlign = Gtk.Alignment.new(1.0, 1.0, 0.0, 0.0)
+		self.DismissButton = Gtk.Button.new_with_mnemonic('_Exit')
+		self.DismissAlign.add(self.DismissButton)
+		
+		self.VBox.pack_start(self.MsgHBox, True, True, 8)
+		self.VBox.pack_start(self.DismissAlign, True, True, 8)
+		
+		self.DismissButton.connect('clicked', lambda *Discarded : os._exit(1))
+		
+		self.add(self.VBox)
+		
+				
 class TrayIconObject(Gtk.StatusIcon):
 	def __init__(self, MainObj = None):
 		Gtk.StatusIcon.__init__(self)
