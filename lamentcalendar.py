@@ -35,6 +35,8 @@ class PrimaryLoopObj(GtkGUI.MainWindow):
 			BTDialog = GtkGUI.BacktraceDialog(traceback.format_exc())
 			BTDialog.show_all()
 			self.CheckTriggers = lambda *Discarded : None
+		
+		return True #So GLib's timeouts keep running. Returning False or None makes them terminate.
 
 def RunGTKApp():
 	if '--silence' in sys.argv:

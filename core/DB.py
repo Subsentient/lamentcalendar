@@ -267,6 +267,6 @@ class DBObject(object):
 				and FieldMatches(Item[ItemField.MINUTES], TimeStruct.tm_min) \
 				and TimeStruct.tm_sec == 0:
 					NotificationCallback(Item, *CallbackArgs)
-				
+
 		return True
 
