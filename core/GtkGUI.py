@@ -13,10 +13,12 @@ def SetWindowIcon(Window):
 	Window.set_icon(GdkPixbuf.Pixbuf.new_from_file('lament.png'))
 
 class MainWindow(Gtk.Window):
-	def __init__(self, Callbacks={}): #Yes, the same static-initialized list is indeed what we want.
-		self.Callbacks = Callbacks
+
+	def __init__(self): #Yes, the same static-initialized list is indeed what we want.
 		
 		Gtk.Window.__init__(self, title='Lament Calendar')
+		
+		self.Notifications = {}
 
 		self.set_default_size(640, 480)
 		self.connect('destroy', self.TerminateApp)
@@ -43,19 +45,19 @@ class MainWindow(Gtk.Window):
 		
 		self.NewEventItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_NEW)
 		self.NewEventItem.set_label("_New Event")
-		self.NewEventItem.connect('activate', self.NewClicked)
+		self.NewEventItem.connect('activate', self.OnNewItemClick)
 		
 		self.ReloadDBItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_REFRESH)
 		self.ReloadDBItem.set_label("_Reload database")
-		self.ReloadDBItem.connect('activate', self.ReloadDBClicked)
+		self.ReloadDBItem.connect('activate', self.OnReloadDBClick)
 		
 		self.AllEventsItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_INDEX)
 		self.AllEventsItem.set_label('List _all events')
-		self.AllEventsItem.connect('activate', self.ListAllClicked)
+		self.AllEventsItem.connect('activate', self.OnListAllClick)
 
 		self.MinimizeToTrayItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_CLOSE)
 		self.MinimizeToTrayItem.set_label("_Minimize to tray")
-		self.MinimizeToTrayItem.connect('activate', self.SendToTrayClicked)
+		self.MinimizeToTrayItem.connect('activate', self.OnSendToTrayClick)
 
 		self.SilenceItem = Gtk.CheckMenuItem.new_with_mnemonic("_Silence alarms")
 		self.SilenceItem.set_active(Audio.GetSilenced())
@@ -77,6 +79,14 @@ class MainWindow(Gtk.Window):
 		#Add it all in
 		self.VBox.pack_start(self.MenuBarAlign, False, True, 0)
 		self.VBox.pack_start(self.Calendar, True, True, 0)
+		
+		#First callbacks we must manually invoke
+		Dates = [*self.Calendar.get_date()]
+		Dates[1] += 1
+		
+		self.DB = DB.DBObject(DB.DBObject.DB_FILEPATH)
+
+		self.OnMonthChange(*Dates)
 
 	def TerminateApp(self, Widget):
 		sys.exit(0)
@@ -90,40 +100,20 @@ class MainWindow(Gtk.Window):
 		for Key in self.Notifications:
 			Methods[not OldState](self.Notifications[Key].Noisemaker)
 
-		
-	def SendToTrayClicked(self, Widget):
-		if 'sendtotrayclicked' in self.Callbacks:
-			self.Callbacks['sendtotrayclicked'][0]('*', '*', '*', *self.Callbacks['sendtotrayclicked'][1:])
-			
-	def ReloadDBClicked(self, Widget):
-		if 'reloaddbclicked' in self.Callbacks:
-			self.Callbacks['reloaddbclicked'][0]('*', '*', '*', *self.Callbacks['reloaddbclicked'][1:])
-			
-	def ListAllClicked(self, Widget):
-		if 'listallclicked' in self.Callbacks:
-			self.Callbacks['listallclicked'][0]('*', '*', '*', *self.Callbacks['listallclicked'][1:])
-			
-	def NewClicked(self, Widget):
-		if 'newitem' in self.Callbacks:
-			self.Callbacks['newitem'][0](*self.Callbacks['newitem'][1:])
-
 	def DayClicked(self, Calendar):
 		assert Calendar is self.Calendar
-		Year, Month, Day = Calendar.get_date()
-		Month += 1
+		Dates = [*Calendar.get_date()]
+		Dates[1] += 1
 
-		if 'dayclick' in self.Callbacks:
-			self.Callbacks['dayclick'][0](Year, Month, Day, *self.Callbacks['dayclick'][1:])
+		self.OnDayClick(*Dates)
 
 	def MonthChanged(self, Calendar):
 		assert Calendar is self.Calendar
-		
-		if 'monthchanged' in self.Callbacks:
+
+		Dates = [*self.Calendar.get_date()]
+		Dates[1] += 1 #Change month to 1 to 12 instead of 0 to 11
 			
-			Dates = [*self.Calendar.get_date()]
-			Dates[1] += 1 #Change month to 1 to 12 instead of 0 to 11
-			
-			self.Callbacks['monthchanged'][0](*Dates, *self.Callbacks['monthchanged'][1:])
+		self.OnMonthChange(*Dates)
 		
 	def MarkDay(self, Day):
 		self.Calendar.mark_day(Day)
@@ -165,7 +155,7 @@ class MainWindow(Gtk.Window):
 					
 				self.Calendar.mark_day(int(Day))
 
-	def NewItemClicked(self):
+	def OnNewItemClick(self, *Discarded):
 		Year, Month, Day = self.Calendar.get_date()
 		Month += 1
 

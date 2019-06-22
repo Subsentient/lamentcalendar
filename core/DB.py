@@ -62,7 +62,8 @@ def NewEmptyItem():
 	return RetVal
 
 class DBObject(object):
-
+	DB_FILEPATH = 'events.db'
+	
 	def __init__(self, FilePath):
 		
 		if not os.path.isfile(FilePath):
