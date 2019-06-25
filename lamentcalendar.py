@@ -32,7 +32,7 @@ def RunGTKApp():
 	signal.signal(signal.SIGTERM, lambda *Discarded : sys.exit(0))
 	signal.signal(signal.SIGINT, lambda *Discarded : sys.exit(0))
 
-	GtkGUI.GLib.timeout_add(200, lambda *Discarded : MainObj.DB.CheckTriggers or True, MainObj.SpawnNotification)
+	GtkGUI.GLib.timeout_add(200, lambda *Discarded : MainObj.DB.CheckTriggers(MainObj.SpawnNotification) or True)
 	
 	GtkGUI.Gtk.main()
 
