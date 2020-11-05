@@ -8,9 +8,9 @@ from DB import FieldDBTypes, FieldType, FieldNames, ItemField
 import DB
 import Audio, DateCalc
 
-	
+IconPixmap = GdkPixbuf.Pixbuf.new_from_file('lament.png')
 def SetWindowIcon(Window):
-	Window.set_icon(GdkPixbuf.Pixbuf.new_from_file('lament.png'))
+	Window.set_icon(IconPixmap)
 
 class MainWindow(Gtk.Window):
 
@@ -19,7 +19,8 @@ class MainWindow(Gtk.Window):
 		Gtk.Window.__init__(self, title='Lament Calendar')
 		
 		self.Notifications = {}
-
+		self.Stopwatches = []
+		
 		self.set_default_size(640, 480)
 		self.connect('destroy', self.TerminateApp)
 		
@@ -38,6 +39,11 @@ class MainWindow(Gtk.Window):
 		self.FileTag = Gtk.MenuItem.new_with_mnemonic('_File')
 		self.FileTag.set_submenu(self.FileMenu)
 		self.MenuBar.append(self.FileTag)
+
+		self.TimerMenu = Gtk.Menu.new()
+		self.TimerTag = Gtk.MenuItem.new_with_mnemonic('_Timer')
+		self.TimerTag.set_submenu(self.TimerMenu)
+		self.MenuBar.append(self.TimerTag)
 
 		#Populate file menu
 		self.QuitItem = Gtk.ImageMenuItem.new_from_stock(Gtk.STOCK_QUIT)
@@ -70,7 +76,11 @@ class MainWindow(Gtk.Window):
 		self.FileMenu.append(self.ReloadDBItem)
 		self.FileMenu.append(self.QuitItem)
 
-
+		#Populate timer menu
+		self.StopwatchItem = Gtk.MenuItem.new_with_mnemonic('New s_topwatch')
+		self.StopwatchItem.connect('activate', lambda *Discarded : self.SpawnStopwatch())
+		self.TimerMenu.append(self.StopwatchItem)
+		
 		#Configure calendar display.
 		self.Calendar = Gtk.Calendar()
 		self.Calendar.connect('day-selected-double-click', self.DayClicked)
@@ -88,6 +98,13 @@ class MainWindow(Gtk.Window):
 
 		self.OnMonthChange(*Dates)
 
+	def SpawnStopwatch(self):
+		S = Stopwatch()
+		
+		self.Stopwatches.append(S)
+
+		S.show_all()
+		
 	def TerminateApp(self, Widget):
 		sys.exit(0)
 		
@@ -238,6 +255,67 @@ class MainWindow(Gtk.Window):
 			Obj = self.Notifications[Key]
 			Obj.DismissClicked()
 
+class Stopwatch(Gtk.Window):
+	def __init__(self, Title = 'Stopwatch', Callbacks = {}, InitialSecs = 0):
+		self.Running = False
+		self.TotalElapsed = 0
+		self.CurTime = 0
+		self.StartTime = int(time.time())
+		
+		self.Callbacks = Callbacks
+	
+		Gtk.Window.__init__(self, title=Title)
+		self.set_default_size(200, 100)
+
+		SetWindowIcon(self)
+
+		self.VBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+		self.add(self.VBox)
+		
+		self.TimeLabel = Gtk.Label()
+		self.VBox.pack_start(self.TimeLabel, True, False, 8)
+
+		self.ToggleButton = Gtk.Button.new_with_label('Start')
+		self.VBox.pack_start(self.ToggleButton, False, False, 8)
+
+		self.DrawTimeLabel(0)
+
+		self.ToggleButton.connect('clicked', lambda *Discarded : self.TogglePause())
+		
+		GLib.timeout_add(100, self.UpdateTimer)
+
+	def TogglePause(self):
+		if self.Running:
+			self.Running = False
+			self.ToggleButton.set_label('Resume')
+			return True
+
+		self.StartTime = int(time.time())
+		self.TotalElapsed += self.CurTime - self.TotalElapsed
+		self.Running = True
+		self.ToggleButton.set_label('Pause')
+		
+		return True
+
+	@property
+	def TotalSecs(self):
+		return self.CurTime
+
+	def UpdateTimer(self):
+		if not self.Running:
+			return True
+			
+		self.CurTime = (int(time.time()) - self.StartTime) + self.TotalElapsed
+		
+		print(f'Elapsed {self.TotalSecs}')
+		self.DrawTimeLabel(self.CurTime)
+
+		return True
+	def DrawTimeLabel(self, TimeSecs : int):
+		TVal = time.gmtime(TimeSecs)
+
+		TString = time.strftime('%H:%M:%S', TVal)
+		self.TimeLabel.set_markup(f'<b><span font="22">{TString}</span></b>')
 
 class DayView(Gtk.Window):
 	def __init__(self, Year, Month, Day, DayList, Callbacks={}):
@@ -570,7 +648,6 @@ class BacktraceDialog(Gtk.Window):
 		self.MsgHBox.pack_start(self.Icon, False, True, 8)
 		self.MsgHBox.pack_start(self.Label, False, True, 8)
 		
-
 		
 		self.DismissAlign = Gtk.Alignment.new(1.0, 1.0, 0.0, 0.0)
 		self.DismissButton = Gtk.Button.new_with_mnemonic('_Exit')
