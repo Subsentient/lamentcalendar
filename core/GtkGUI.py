@@ -260,12 +260,12 @@ class Stopwatch(Gtk.Window):
 		self.Running = False
 		self.TotalElapsed = 0
 		self.CurTime = 0
-		self.StartTime = int(time.time())
+		self.StartTime = 0
 		
 		self.Callbacks = Callbacks
 	
 		Gtk.Window.__init__(self, title=Title)
-		self.set_default_size(200, 100)
+		self.set_default_size(300, 100)
 
 		SetWindowIcon(self)
 
@@ -275,22 +275,41 @@ class Stopwatch(Gtk.Window):
 		self.TimeLabel = Gtk.Label()
 		self.VBox.pack_start(self.TimeLabel, True, False, 8)
 
-		self.ToggleButton = Gtk.Button.new_with_label('Start')
-		self.VBox.pack_start(self.ToggleButton, False, False, 8)
+		self.ToggleButton = Gtk.Button.new_with_mnemonic('_Start')
+		self.ResetButton = Gtk.Button.new_with_mnemonic('_Reset')
+		self.SaveButton = Gtk.Button.new_with_mnemonic('Sa_ve')
 
-		self.DrawTimeLabel(0)
+		self.HBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 
-		self.ToggleButton.connect('clicked', lambda *Discarded : self.TogglePause())
+		self.HBox.pack_start(self.ToggleButton, True, True, 4)
+		self.HBox.pack_start(self.ResetButton, False, False, 4)
+		self.HBox.pack_start(self.SaveButton, False, False, 4)
+		
+		self.VBox.pack_start(self.HBox, True, True, 0)
+
+		self.ToggleButton.connect('clicked', lambda *Discarded : self.SetPaused(not self.Running))
+		self.ResetButton.connect('clicked', lambda *Discarded : self.Wipe())
+		self.SaveButton.connect('clicked', lambda *Discarded : self.DumpToDisk())
+
+		self.Wipe()
 		
 		GLib.timeout_add(100, self.UpdateTimer)
-
-	def TogglePause(self):
-		if self.Running:
+		
+	def Wipe(self):
+		self.CurTime = 0.0
+		self.TotalElapsed = 0.0
+		self.StartTime = time.time()
+		self.Running = False
+		self.ToggleButton.set_label('Start')
+		self.DrawTimeLabel(0.0)
+		
+	def SetPaused(self, State):
+		if not State:
 			self.Running = False
 			self.ToggleButton.set_label('Resume')
 			return True
 
-		self.StartTime = int(time.time())
+		self.StartTime = time.time()
 		self.TotalElapsed += self.CurTime - self.TotalElapsed
 		self.Running = True
 		self.ToggleButton.set_label('Pause')
@@ -301,20 +320,49 @@ class Stopwatch(Gtk.Window):
 	def TotalSecs(self):
 		return self.CurTime
 
+	def RunFileChooser(self):
+		Chooser = Gtk.FileChooserDialog("Choose file", self, Gtk.FileChooserAction.OPEN,
+										(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+										Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+		Response = Chooser.run()
+
+		Filename = None
+		
+		if Response == Gtk.ResponseType.OK:
+			Filename = Chooser.get_filename()
+
+		Chooser.destroy()
+
+		return Filename
+
+	def DumpToDisk(self):
+		Path = self.RunFileChooser()
+
+		if not Path:
+			return
+
+		DateFormat = time.strftime('%m/%d/%Y')
+		TimeFormat = time.strftime('%H:%M:%S', time.gmtime(self.TotalSecs))
+
+		with open(Path, 'a') as Desc:
+			Desc.write(f'\n{DateFormat}\n{int(self.TotalSecs)}\t{TimeFormat}\n')
+			
 	def UpdateTimer(self):
 		if not self.Running:
 			return True
 			
-		self.CurTime = (int(time.time()) - self.StartTime) + self.TotalElapsed
+		self.CurTime = (time.time() - self.StartTime) + self.TotalElapsed
 		
-		print(f'Elapsed {self.TotalSecs}')
 		self.DrawTimeLabel(self.CurTime)
 
 		return True
-	def DrawTimeLabel(self, TimeSecs : int):
+	def DrawTimeLabel(self, TimeSecs : float):
 		TVal = time.gmtime(TimeSecs)
 
-		TString = time.strftime('%H:%M:%S', TVal)
+		Fraction = TimeSecs % 1
+		Fraction = int(Fraction * 100 if Fraction >= 0.1 else 0)
+		
+		TString = time.strftime('%H:%M:%S', TVal) + f'.{str(Fraction)[0]}'
 		self.TimeLabel.set_markup(f'<b><span font="22">{TString}</span></b>')
 
 class DayView(Gtk.Window):
