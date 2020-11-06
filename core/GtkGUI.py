@@ -14,6 +14,10 @@ def SetWindowIcon(Window):
 
 class MainWindow(Gtk.Window):
 
+	def DestroyStopwatch(self, Stopwatch):
+		self.Stopwatches.remove(Stopwatch)
+		Stopwatch.destroy()
+
 	def __init__(self): #Yes, the same static-initialized list is indeed what we want.
 		
 		Gtk.Window.__init__(self, title='Lament Calendar')
@@ -99,7 +103,7 @@ class MainWindow(Gtk.Window):
 		self.OnMonthChange(*Dates)
 
 	def SpawnStopwatch(self):
-		S = Stopwatch()
+		S = Stopwatch(self)
 		
 		self.Stopwatches.append(S)
 
@@ -256,14 +260,13 @@ class MainWindow(Gtk.Window):
 			Obj.DismissClicked()
 
 class Stopwatch(Gtk.Window):
-	def __init__(self, Title = 'Stopwatch', Callbacks = {}, InitialSecs = 0):
+	def __init__(self, Parent = None, Title = 'Stopwatch', InitialSecs : float = 0.0):
 		self.Running = False
+		self.Parent = Parent
 		self.TotalElapsed = 0
-		self.CurTime = 0
+		self.CurTime = InitialSecs
 		self.StartTime = 0
-		
-		self.Callbacks = Callbacks
-	
+
 		Gtk.Window.__init__(self, title=Title)
 		self.set_default_size(300, 100)
 
@@ -290,6 +293,7 @@ class Stopwatch(Gtk.Window):
 		self.ToggleButton.connect('clicked', lambda *Discarded : self.SetPaused(not self.Running))
 		self.ResetButton.connect('clicked', lambda *Discarded : self.Wipe())
 		self.SaveButton.connect('clicked', lambda *Discarded : self.DumpToDisk())
+		self.connect('destroy', lambda *D : self.Parent.DestroyStopwatch(self))
 
 		self.Wipe()
 		
