@@ -293,7 +293,7 @@ class Stopwatch(Gtk.Window):
 		self.VBox.pack_start(self.HBox, True, True, 0)
 
 		self.ToggleButton.connect('clicked', lambda *Discarded : self.SetPaused(self.Running))
-		self.ResetButton.connect('clicked', lambda *Discarded : self.Wipe())
+		self.ResetButton.connect('clicked', lambda *Discarded : self.OnResetClick())
 		self.SaveButton.connect('clicked', lambda *Discarded : self.OnSaveClick())
 		self.connect('destroy', lambda *D : self.Parent.DestroyStopwatch(self))
 
@@ -310,6 +310,11 @@ class Stopwatch(Gtk.Window):
 		self.Running = False
 		self.ToggleButton.set_label('Start')
 		self.DrawTimeLabel(0.0)
+
+	def OnResetClick(self):
+		self.set_title('Stopwatch')
+		self.set_icon(IconPixmap)
+		self.Wipe()
 		
 	def SetPaused(self, State):
 		if State != self.Running:
