@@ -9,8 +9,10 @@ import DB
 import Audio, DateCalc
 
 IconPixmap = GdkPixbuf.Pixbuf.new_from_file('lament.png')
-def SetWindowIcon(Window):
-	Window.set_icon(IconPixmap)
+ActiveIconPixmap = GdkPixbuf.Pixbuf.new_from_file('active.png')
+
+def SetWindowIcon(Window, Icon = IconPixmap):
+	Window.set_icon(Icon)
 
 class MainWindow(Gtk.Window):
 
@@ -290,11 +292,13 @@ class Stopwatch(Gtk.Window):
 		
 		self.VBox.pack_start(self.HBox, True, True, 0)
 
-		self.ToggleButton.connect('clicked', lambda *Discarded : self.SetPaused(not self.Running))
+		self.ToggleButton.connect('clicked', lambda *Discarded : self.SetPaused(self.Running))
 		self.ResetButton.connect('clicked', lambda *Discarded : self.Wipe())
-		self.SaveButton.connect('clicked', lambda *Discarded : self.DumpToDisk())
+		self.SaveButton.connect('clicked', lambda *Discarded : self.OnSaveClick())
 		self.connect('destroy', lambda *D : self.Parent.DestroyStopwatch(self))
 
+		self.ToggleButton.grab_focus()
+		
 		self.Wipe()
 		
 		GLib.timeout_add(100, self.UpdateTimer)
@@ -308,9 +312,15 @@ class Stopwatch(Gtk.Window):
 		self.DrawTimeLabel(0.0)
 		
 	def SetPaused(self, State):
-		if not State:
+		if State != self.Running:
+			return True #Already in that state.
+
+		self.set_icon(ActiveIconPixmap if not State else IconPixmap)
+		
+		if State:
 			self.Running = False
 			self.ToggleButton.set_label('Resume')
+			self.set_title('Stopwatch')
 			return True
 
 		self.StartTime = time.time()
@@ -323,6 +333,11 @@ class Stopwatch(Gtk.Window):
 	@property
 	def TotalSecs(self):
 		return self.CurTime
+
+	def OnSaveClick(self):
+		self.SetPaused(True)
+		self.DumpToDisk()
+		self.Wipe()
 
 	def RunFileChooser(self):
 		Chooser = Gtk.FileChooserDialog("Choose file", self, Gtk.FileChooserAction.OPEN,
@@ -350,7 +365,7 @@ class Stopwatch(Gtk.Window):
 
 		with open(Path, 'a') as Desc:
 			Desc.write(f'\n{DateFormat}\n{int(self.TotalSecs)}\t{TimeFormat}\n')
-			
+
 	def UpdateTimer(self):
 		if not self.Running:
 			return True
@@ -360,15 +375,20 @@ class Stopwatch(Gtk.Window):
 		self.DrawTimeLabel(self.CurTime)
 
 		return True
+
 	def DrawTimeLabel(self, TimeSecs : float):
 		TVal = time.gmtime(TimeSecs)
 
 		Fraction = TimeSecs % 1
 		Fraction = int(Fraction * 100 if Fraction >= 0.1 else 0)
-		
-		TString = time.strftime('%H:%M:%S', TVal) + f'.{str(Fraction)[0]}'
-		self.TimeLabel.set_markup(f'<b><span font="22">{TString}</span></b>')
 
+		SubTString = time.strftime('%H:%M:%S', TVal)
+		TString =  f'{SubTString}.{str(Fraction)[0]}'
+		self.TimeLabel.set_markup(f'<b><span font="22">{TString}</span></b>')
+		
+		if not Fraction and self.Running:
+			self.set_title(f'{SubTString} - Stopwatch')
+		
 class DayView(Gtk.Window):
 	def __init__(self, Year, Month, Day, DayList, Callbacks={}):
 		self.Callbacks = Callbacks
