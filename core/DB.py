@@ -64,21 +64,21 @@ def NewEmptyItem():
 class DBObject(object):
 	DB_FILEPATH = 'events.db'
 	
-	def __init__(self, FilePath):
+	def __init__(self):
 		
-		if not os.path.isfile(FilePath):
+		if not os.path.isfile(self.DB_FILEPATH):
 			NeedInit = True
 		else:
 			NeedInit = False
 			
-		self.Conn = sqlite3.connect(FilePath)
+		self.Conn = sqlite3.connect(self.DB_FILEPATH)
 
 		if not self.Conn:
-			raise RuntimeError('Failed to open SQlite database ' + FilePath + '!')
+			raise RuntimeError('Failed to open SQlite database ' + self.DB_FILEPATH + '!')
 
 		if NeedInit:
-			if not self.SetupDB(FilePath):
-				raise RuntimeError('Unable to setup new database at ' + FilePath + '!')
+			if not self.SetupDB(self.DB_FILEPATH):
+				raise RuntimeError('Unable to setup new database at ' + self.DB_FILEPATH + '!')
 		self.LoadDB()
 		
 	def __del__(self):
@@ -111,10 +111,25 @@ class DBObject(object):
 	def __len__(self):
 		return len(self.Data)
 	def LoadDB(self):
-		self.Data = self.GetList()
+		RemainingAttempts = 3
+		Data = None
+		MT = None
+		
+		for Inc in range(0, RemainingAttempts):
+			try:
+				self.Conn = sqlite3.connect(self.DB_FILEPATH)
+				Data = self.GetList()
+				MT = os.stat(self.DB_FILEPATH)
+				break
+			except:
+				time.sleep(0.5)
+				continue
+			
+		if Data is None or MT is None:
+			raise RuntimeError('Unable to load SQLite database!')
 
-		if type(self.Data) is not dict:
-			raise RuntimeError('SQlite database opened, but unable to load contents to memory!')
+		self.Data = Data
+		self.ModTime = MT.st_mtime
 
 	def SetupDB(self, FilePath):
 		Cursor = self.Conn.cursor()
@@ -176,12 +191,18 @@ class DBObject(object):
 
 		Cursor = self.Conn.cursor()
 
-		try:
-			Cursor.execute("delete from events where name=?;", (ItemName,))
-			self.Conn.commit()
-			return True
-		except Exception as Err:
-			return False
+		Ok = False
+		
+		for Inc in range(0, 3):
+			try:
+				Cursor.execute("delete from events where name=?;", (ItemName,))
+				self.Conn.commit()
+				Ok = True
+				break
+			except:
+				time.sleep(0.5)
+
+		return Ok
 	def GetList(self):
 		Cursor = self.Conn.cursor()
 
@@ -247,6 +268,22 @@ class DBObject(object):
 		
 		return Results
 
+	def CheckReload(self):
+		S = None
+
+		for _ in range(0, 3):
+			try:
+				S = os.stat(self.DB_FILEPATH)
+				break
+			except:
+				time.sleep(0.5)
+
+		if S is None: #Silently fail.
+			return
+
+		if S.st_mtime > self.ModTime:
+			self.LoadDB()
+		
 	def CheckTriggers(self, NotificationCallback, *CallbackArgs):
 		def FieldMatches(Times, T2):
 			if Times == '*':

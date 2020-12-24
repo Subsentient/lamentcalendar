@@ -100,7 +100,7 @@ class MainWindow(Gtk.Window):
 		Dates = [*self.Calendar.get_date()]
 		Dates[1] += 1
 		
-		self.DB = DB.DBObject(DB.DBObject.DB_FILEPATH)
+		self.DB = DB.DBObject()
 
 		self.OnMonthChange(*Dates)
 
