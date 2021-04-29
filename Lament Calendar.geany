@@ -28,16 +28,17 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=5
+current_page=6
 FILE_NAME_0=9427;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fdb.cpp;0;4
 FILE_NAME_1=2436;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fcontrol%2Fgui_mainwindow.cpp;0;4
-FILE_NAME_2=143;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FAudio.py;0;4
-FILE_NAME_3=660;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDateCalc.py;0;4
-FILE_NAME_4=1019;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Flamentcalendar.py;0;4
-FILE_NAME_5=3536;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGtkGUI.py;0;4
-FILE_NAME_6=145;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FPygameAudio.py;0;4
-FILE_NAME_7=1896;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDB.py;0;4
-FILE_NAME_8=5003;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fcore.cpp;0;4
+FILE_NAME_2=204;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FAudio.py;0;4
+FILE_NAME_3=484;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDateCalc.py;0;4
+FILE_NAME_4=529;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Flamentcalendar.py;0;4
+FILE_NAME_5=708;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGtkGUI.py;0;4
+FILE_NAME_6=1896;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FDB.py;0;4
+FILE_NAME_7=5003;C++;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fvolition%2Fsrc%2Fserver%2Fcore.cpp;0;4
+FILE_NAME_8=1892;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Fscripts%2Fhourstocsv2.py;0;4
+FILE_NAME_9=508;Python;0;EUTF-8;1;1;0;%2Fhome%2Fben%2Fworkspace%2Flamentcalendar%2Fcore%2FGStreamerAudio.py;0;4
 
 [VTE]
 last_dir=/home/ben/workspace/lamentcalendar

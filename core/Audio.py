@@ -1,15 +1,15 @@
-import PygameAudio
+import GStreamerAudio
 
 Silenced = False
 
-class AudioEvent(PygameAudio.AudioEvent):
+class AudioEvent(GStreamerAudio.AudioEvent):
 	def Play(self, Loop = False):
 		if GetSilenced():
 			return
 		
 		for _ in range(0, 3):
 			try:
-				PygameAudio.AudioEvent.Play(self, Loop)
+				super().Play(Loop)
 				break
 			except:
 				time.sleep(0.5)
