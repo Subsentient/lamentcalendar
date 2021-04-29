@@ -1,4 +1,5 @@
 import GStreamerAudio
+import time, traceback
 
 Silenced = False
 
@@ -12,6 +13,7 @@ class AudioEvent(GStreamerAudio.AudioEvent):
 				super().Play(Loop)
 				break
 			except:
+				traceback.print_exc()
 				time.sleep(0.5)
 				continue
 
