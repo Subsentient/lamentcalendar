@@ -157,7 +157,7 @@ class MainWindow(Gtk.Window):
 			L.sort(key = lambda k : k[DB.ItemField.NAME].lower())
 			return L
 
-		DayViewObj = DayView('*', '*', '*', DayListGen, { 'editclicked' : (self.OnEditClick,),
+		DayViewObj = DayView('*', '*', '*', lambda : DayListGen(self), { 'editclicked' : (self.OnEditClick,),
 													'newclicked' : (self.OnNewButtonClick,) } )
 		DayViewObj.show_all()
 		
