@@ -14,6 +14,7 @@ ActiveIconPixmap = GdkPixbuf.Pixbuf.new_from_file('active.png')
 def SetWindowIcon(Window, Icon = IconPixmap):
 	Window.set_icon(Icon)
 
+
 class MainWindow(Gtk.Window):
 
 	def DestroyStopwatch(self, Stopwatch):
@@ -31,7 +32,7 @@ class MainWindow(Gtk.Window):
 		self.connect('destroy', self.TerminateApp)
 		
 		SetWindowIcon(self)
-		
+
 		self.VBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 		self.add(self.VBox)
 
@@ -196,16 +197,18 @@ class MainWindow(Gtk.Window):
 		self.DB[Dict[DB.ItemField.NAME]] = Dict
 
 		NewEvent = Dict
+		
+		Year, Month, Day = NewEvent[ItemField.YEAR], NewEvent[ItemField.MONTH], NewEvent[ItemField.DAY]
 
 		if DayViewDialog:
-			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
+			#isnumeric here determines if it's something other than an asterisk or empty.
+			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric(): 
 				WDay = DateCalc.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
 			else:
 				WDay = '*'
 			
-			DayViewDialog.Repopulate(lambda : self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
+			DayViewDialog.Repopulate(lambda : self.DB.SearchByDate(Year, Month, Day, WDay))
 			
-		Year, Month, Day = NewEvent[ItemField.YEAR], NewEvent[ItemField.MONTH], NewEvent[ItemField.DAY]
 
 		self.RedrawCalendar(Year, Month, Day)
 		
@@ -225,7 +228,7 @@ class MainWindow(Gtk.Window):
 			else:
 				WDay = '*'
 
-			DayViewDialog.Repopulate(lambda : self.DB.SearchByDate(Year, Month, Day, WDay))
+			DayViewDialog.Repopulate()
 			
 		self.RedrawCalendar(Year, Month, Day)
 		
@@ -416,13 +419,16 @@ class DayView(Gtk.Window):
 		self.Callbacks = Callbacks
 
 		self.Year, self.Month, self.Day = str(Year), str(Month), str(Day)
+
 		self.DayListCB = DayListCB
-		DayList = DayListCB()
 		
-		Gtk.Window.__init__(self, title='Events for ' + str(Year) + '-' +\
-		DateCalc.DoubleDigitFormat(str(Month)) + '-' + \
-		DateCalc.DoubleDigitFormat(str(Day)))
+		Gtk.Window.__init__(self)
+		
+		self.SetWindowTitle()
+		
 		SetWindowIcon(self)
+
+		DayList = self.DayListCB()
 
 		self.set_default_size(500, 300)
 		self.VBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -438,7 +444,6 @@ class DayView(Gtk.Window):
 		self.NewEventButtonAlign = Gtk.Alignment.new(1.0, 0.0, 0.0, 0.0)
 		self.NewEventButtonAlign.add(self.NewEventButton)
 		self.CommandBarLabel = Gtk.Label()
-
 		self.SetCommandBarStatus(DayList)
 		
 		self.CommandBarBox.pack_start(self.CommandBarLabel, False, False, 8)
@@ -457,11 +462,16 @@ class DayView(Gtk.Window):
 		
 		self.WindowView.add(self.WindowViewBox)
 
-		DayList = DayListCB()
 			
 		for Value in DayList:
 			self.AddItem(Value)
 
+	def SetWindowTitle(self, Arg = None):
+		if Arg:
+			self.set_title(Arg)
+			return
+			
+		self.set_title('Events for ' + str(self.Year) + '-' + DateCalc.DoubleDigitFormat(str(self.Month)) + '-' + DateCalc.DoubleDigitFormat(str(self.Day)))
 
 	def AddItem(self, Value):
 		Label = Gtk.Label.new()
@@ -508,21 +518,26 @@ class DayView(Gtk.Window):
 		self.WindowViewBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 		self.WindowView.add(self.WindowViewBox)
 		
-	def Repopulate(self, DayListCB = None):
-		DayList = DayListCB() if DayListCB else self.DayListCB()
+	def Repopulate(self, DayListCBIn = None):
+		DayListCB = DayListCBIn if DayListCBIn else self.DayListCB
 
-		self.DayListCB = DayListCB
-		
+		if DayListCBIn:
+			self.DayListCB = DayListCB
+			
+		print(f'New DayListCB is {self.DayListCB}, old {DayListCBIn}', flush = True)
+			
 		self.Wipe()
-		
+		DayList = self.DayListCB()
+
 		for Value in DayList:
 			self.AddItem(Value)
 			
 		self.SetCommandBarStatus(DayList)
+		self.SetWindowTitle()
 		self.show_all()
 		
 	def SetCommandBarStatus(self, DayList):
-		self.CommandBarLabel.set_text('Found ' + str(len(DayList)) + ' matching events.')
+		self.CommandBarLabel.set_text(f'Found {len(DayList)} matching events.')
 		
 class EventView(Gtk.Window):
 	def RunChooser(self, Button, Key):
