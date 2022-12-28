@@ -99,10 +99,10 @@ class MainWindow(Gtk.Window):
 		#First callbacks we must manually invoke
 		Dates = [*self.Calendar.get_date()]
 		Dates[1] += 1
-		
+
 		self.DB = DB.DBObject()
 
-		self.OnMonthChange(*Dates)
+		self.RedrawCalendar(*Dates)
 
 	def SpawnStopwatch(self):
 		S = Stopwatch(self)
@@ -136,7 +136,7 @@ class MainWindow(Gtk.Window):
 		Dates = [*self.Calendar.get_date()]
 		Dates[1] += 1 #Change month to 1 to 12 instead of 0 to 11
 			
-		self.OnMonthChange(*Dates)
+		self.RedrawCalendar(*Dates)
 		
 	def MarkDay(self, Day):
 		self.Calendar.mark_day(Day)
@@ -152,21 +152,23 @@ class MainWindow(Gtk.Window):
 		self.hide()
 		
 	def OnListAllClick(self, *Unused):
-		DayList = [self.DB[Item] for Item in self.DB] #DBObject is iterable like a dict
-		DayList.sort(key = lambda k : k[DB.ItemField.NAME].lower())
-		
-		DayViewObj = DayView('*', '*', '*', DayList, { 'editclicked' : (self.OnEditClick,),
+		def DayListGen(self):
+			L = [self.DB[Item] for Item in self.DB]
+			L.sort(key = lambda k : k[DB.ItemField.NAME].lower())
+			return L
+
+		DayViewObj = DayView('*', '*', '*', DayListGen, { 'editclicked' : (self.OnEditClick,),
 													'newclicked' : (self.OnNewButtonClick,) } )
 		DayViewObj.show_all()
 		
 	def OnDayClick(self, Year, Month, Day):
-		DayList = self.DB.SearchByDate(Year, Month, Day, DateCalc.GetWeekdayFromDate(Year, Month, Day))
+		DayListCB = lambda : self.DB.SearchByDate(Year, Month, Day, DateCalc.GetWeekdayFromDate(Year, Month, Day))
 		
-		DayViewObj = DayView(Year, Month, Day, DayList, { 'editclicked' : (self.OnEditClick,),\
+		DayViewObj = DayView(Year, Month, Day, DayListCB, { 'editclicked' : (self.OnEditClick,),\
 														'newclicked' : (self.OnNewButtonClick,) })
 		DayViewObj.show_all()
 		
-	def OnMonthChange(self, Year, Month, Day):
+	def RedrawCalendar(self, Year, Month, Day):
 		self.Calendar.clear_marks()
 		
 		DayList = self.DB.SearchByDate(Year, Month, '*', '*')
@@ -187,31 +189,46 @@ class MainWindow(Gtk.Window):
 		EventObj.show_all()
 		
 	def OnSaveClick(self, Dict, OriginalName, DayViewDialog):
+
 		if OriginalName != Dict[DB.ItemField.NAME] and OriginalName in self.DB:
 			del self.DB[OriginalName]
-			
-		self.DB[Dict[DB.ItemField.NAME]] = Dict
 		
+		self.DB[Dict[DB.ItemField.NAME]] = Dict
+
+		NewEvent = Dict
+
 		if DayViewDialog:
 			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
 				WDay = DateCalc.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
 			else:
 				WDay = '*'
-			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
+			
+			DayViewDialog.Repopulate(lambda : self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
+			
+		Year, Month, Day = NewEvent[ItemField.YEAR], NewEvent[ItemField.MONTH], NewEvent[ItemField.DAY]
+
+		self.RedrawCalendar(Year, Month, Day)
 		
 	def OnDeleteClick(self, Dict, OriginalName, DayViewDialog):
 		if not OriginalName in self.DB:
 			return
 
+		OriginalEvent = self.DB[OriginalName]
+
 		del self.DB[OriginalName]
+
+		Year, Month, Day = OriginalEvent[ItemField.YEAR], OriginalEvent[ItemField.MONTH], OriginalEvent[ItemField.DAY]
 		
 		if DayViewDialog:
 			if DayViewDialog.Year.isnumeric() and DayViewDialog.Month.isnumeric() and DayViewDialog.Day.isnumeric():
-				WDay = DateCalc.GetWeekdayFromDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day)
+				WDay = DateCalc.GetWeekdayFromDate(Year, Month, Day)
 			else:
 				WDay = '*'
-			DayViewDialog.Repopulate(self.DB.SearchByDate(DayViewDialog.Year, DayViewDialog.Month, DayViewDialog.Day, WDay))
 
+			DayViewDialog.Repopulate(lambda : self.DB.SearchByDate(Year, Month, Day, WDay))
+			
+		self.RedrawCalendar(Year, Month, Day)
+		
 	def OnEditClick(self, Widget, EventName, DayViewDialog):
 		CallbackDict = { 'saveclose' : (self.OnSaveClick, DayViewDialog),
 						'delclose' : (self.OnDeleteClick, DayViewDialog) }
@@ -395,10 +412,12 @@ class Stopwatch(Gtk.Window):
 			self.set_title(f'{SubTString} - Stopwatch')
 		
 class DayView(Gtk.Window):
-	def __init__(self, Year, Month, Day, DayList, Callbacks={}):
+	def __init__(self, Year, Month, Day, DayListCB, Callbacks={}):
 		self.Callbacks = Callbacks
 
 		self.Year, self.Month, self.Day = str(Year), str(Month), str(Day)
+		self.DayListCB = DayListCB
+		DayList = DayListCB()
 		
 		Gtk.Window.__init__(self, title='Events for ' + str(Year) + '-' +\
 		DateCalc.DoubleDigitFormat(str(Month)) + '-' + \
@@ -436,10 +455,13 @@ class DayView(Gtk.Window):
 		
 		self.WindowViewBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 		
-		self.WindowView.add_with_viewport(self.WindowViewBox)
-		
+		self.WindowView.add(self.WindowViewBox)
+
+		DayList = DayListCB()
+			
 		for Value in DayList:
 			self.AddItem(Value)
+
 
 	def AddItem(self, Value):
 		Label = Gtk.Label.new()
@@ -482,9 +504,15 @@ class DayView(Gtk.Window):
 
 	def Wipe(self):
 		self.WindowView.remove(self.WindowViewBox)
+		
 		self.WindowViewBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 		self.WindowView.add(self.WindowViewBox)
-	def Repopulate(self, DayList):
+		
+	def Repopulate(self, DayListCB = None):
+		DayList = DayListCB() if DayListCB else self.DayListCB()
+
+		self.DayListCB = DayListCB
+		
 		self.Wipe()
 		
 		for Value in DayList:
@@ -492,6 +520,7 @@ class DayView(Gtk.Window):
 			
 		self.SetCommandBarStatus(DayList)
 		self.show_all()
+		
 	def SetCommandBarStatus(self, DayList):
 		self.CommandBarLabel.set_text('Found ' + str(len(DayList)) + ' matching events.')
 		

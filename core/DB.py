@@ -66,10 +66,7 @@ class DBObject(object):
 	
 	def __init__(self):
 		
-		if not os.path.isfile(self.DB_FILEPATH):
-			NeedInit = True
-		else:
-			NeedInit = False
+		NeedInit = True if not os.path.isfile(self.DB_FILEPATH) else False
 			
 		self.Conn = sqlite3.connect(self.DB_FILEPATH)
 
