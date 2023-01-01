@@ -1,7 +1,8 @@
 import GStreamerAudio
-import time, traceback
-
+import time, traceback, os
+from __main__ import __file__ as MainDir
 Silenced = False
+AlarmSound = f'{os.path.dirname(os.path.realpath(MainDir))}{os.sep}alarm.ogg'
 
 class AudioEvent(GStreamerAudio.AudioEvent):
 	def Play(self, Loop = False):

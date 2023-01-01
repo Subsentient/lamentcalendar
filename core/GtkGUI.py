@@ -1,7 +1,7 @@
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("GLib", "2.0")
-from gi.repository import Gtk, GdkPixbuf, GLib
+from gi.repository import Gtk, GdkPixbuf, GLib, Pango
 import sys, os, time
 
 from DB import FieldDBTypes, FieldType, FieldNames, ItemField
@@ -17,6 +17,10 @@ def SetWindowIcon(Window, Icon = IconPixmap):
 
 class MainWindow(Gtk.Window):
 
+	def DestroyTimer(self, Timer):
+		self.Timers.remove(Timer)
+		Timer.destroy()
+		
 	def DestroyStopwatch(self, Stopwatch):
 		self.Stopwatches.remove(Stopwatch)
 		Stopwatch.destroy()
@@ -27,6 +31,7 @@ class MainWindow(Gtk.Window):
 		
 		self.Notifications = {}
 		self.Stopwatches = []
+		self.Timers = []
 		
 		self.set_default_size(640, 480)
 		self.connect('destroy', self.TerminateApp)
@@ -88,6 +93,10 @@ class MainWindow(Gtk.Window):
 		self.StopwatchItem.connect('activate', lambda *Discarded : self.SpawnStopwatch())
 		self.TimerMenu.append(self.StopwatchItem)
 		
+		self.TimerItem = Gtk.MenuItem.new_with_mnemonic('New simple timer')
+		self.TimerItem.connect('activate', lambda *Discarded : self.SpawnTimer())
+		self.TimerMenu.append(self.TimerItem)
+		
 		#Configure calendar display.
 		self.Calendar = Gtk.Calendar()
 		self.Calendar.connect('day-selected-double-click', self.DayClicked)
@@ -109,6 +118,13 @@ class MainWindow(Gtk.Window):
 		S = Stopwatch(self)
 		
 		self.Stopwatches.append(S)
+
+		S.show_all()
+		
+	def SpawnTimer(self):
+		S = Timer(self)
+		
+		self.Timers.append(S)
 
 		S.show_all()
 		
@@ -280,7 +296,174 @@ class MainWindow(Gtk.Window):
 		for Key in dict(self.Notifications): #Shallow copy because you can't iterate over it if you're deleting elements.
 			Obj = self.Notifications[Key]
 			Obj.DismissClicked()
+			
+class Timer(Gtk.Window):
+	def __init__(self, Parent = None):
+		self.Notification = None
+		self.Running = False
+		self.Parent = Parent
+		self.FinishTime = 0
+		self.StartTime = 0
+		
+		Gtk.Window.__init__(self, title = 'Timer')
+		
+		self.set_default_size(300, 100)
+		SetWindowIcon(self)
+		
+		self.VBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+		self.add(self.VBox)
 
+		self.TimeHBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+
+		self.VBox.pack_start(self.TimeHBox, True, False, 8)
+		
+		self.HourBox = Gtk.Entry()
+		self.HourBox.set_placeholder_text('Hrs')
+		self.HourBox.set_text(str())
+		type(self).SetEntryFont(self.HourBox)
+		self.MinBox = Gtk.Entry()
+		self.MinBox.set_placeholder_text('Mins')
+		self.MinBox.set_text(str())
+		type(self).SetEntryFont(self.MinBox)
+		self.SecBox = Gtk.Entry()
+		self.SecBox.set_placeholder_text('Secs')
+		self.SecBox.set_text(str())
+		type(self).SetEntryFont(self.SecBox)
+
+		
+		self.TimeBoxLabel1 = Gtk.Label(':')
+		self.TimeBoxLabel2 = Gtk.Label(':')
+		
+		self.TimeHBox.pack_start(self.HourBox, True, False, 8)
+		self.TimeHBox.pack_start(self.TimeBoxLabel1, False, False, 0)
+		self.TimeHBox.pack_start(self.MinBox, True, False, 8)
+		self.TimeHBox.pack_start(self.TimeBoxLabel2, False, False, 0)
+		self.TimeHBox.pack_start(self.SecBox, True, False, 8)
+		
+		self.StartButton = Gtk.Button.new_with_mnemonic('_Start')
+		self.PauseButton = Gtk.Button.new_with_mnemonic('_Pause')
+		self.ResetButton = Gtk.Button.new_with_mnemonic('_Reset')
+		
+		self.StartButton.connect('clicked', lambda *Discarded : self.Start())
+		self.PauseButton.connect('clicked', lambda *Discarded : self.Pause())
+		self.ResetButton.connect('clicked', lambda *Discarded : self.Reset())
+		
+		self.ButtonHBox = Gtk.Box(Gtk.Orientation.HORIZONTAL, spacing = 8)
+		
+		self.VBox.pack_start(self.ButtonHBox, True, False, 0)
+		
+		self.ButtonHBox.pack_start(self.StartButton, True, True, 8)
+		self.ButtonHBox.pack_start(self.PauseButton, True, True, 8)
+		self.ButtonHBox.pack_start(self.ResetButton, True, True, 8)
+
+		self.connect('destroy', lambda *D : self.Parent.DestroyTimer(self))
+
+		GLib.timeout_add(100, self.UpdateTimer)
+	
+	@staticmethod
+	def SetEntryFont(Entry):
+		PCtx = Entry.get_pango_context()
+		PDesc = PCtx.get_font_description()
+		PDesc.set_family('Monospace')
+		PDesc.set_absolute_size(22 * Pango.SCALE)
+		PCtx.set_font_description(PDesc)
+	
+	def __KillNotifCB(self):
+		self.Notification = None
+		
+	def UpdateTimer(self):
+		if not self.Running:
+			return True
+
+		self.__UpdateInputBoxes()
+		
+		if self.FinishTime <= int(time.time()):
+			if self.Notification is not None:
+				return True
+				
+			self.Notification = Notification("Timer expired!",
+											"Timer has completed",
+											Audio.AlarmSound,
+											True, lambda *Discarded : self.__KillNotifCB())
+											
+			self.Reset()
+			
+			self.Notification.show_all()
+											
+		return True
+		
+	def __GetInputBoxTime(self):
+		'''Returns the sum of all seconds in the Gtk.Entries'''
+		HrData = int(self.HourBox.get_text()) if self.HourBox.get_text().isnumeric() else 0
+		MinData = int(self.MinBox.get_text()) if self.MinBox.get_text().isnumeric() else 0
+		SecData = int(self.SecBox.get_text()) if self.SecBox.get_text().isnumeric() else 0
+		
+		Time = (HrData * 60 * 60) + (MinData * 60) + SecData
+		
+		return Time
+	
+	def __UpdateInputBoxes(self):
+		if not self.Running:
+			return
+			
+		TotalRemainingSecs = self.FinishTime - int(time.time())
+		
+		if TotalRemainingSecs <= 0:
+			self.HourBox.set_text(str())
+			self.MinBox.set_text(str())
+			self.SecBox.set_text(str())
+			return
+
+			
+		RemainingHrs = (TotalRemainingSecs // 60) // 60
+		RemainingMins = (TotalRemainingSecs // 60) - (RemainingHrs * 60)
+		RemainingSecs = TotalRemainingSecs - (RemainingHrs * 60 * 60) - (RemainingMins * 60)
+		
+		self.HourBox.set_text(str(RemainingHrs))
+		self.MinBox.set_text(str(RemainingMins))
+		self.SecBox.set_text(str(RemainingSecs))
+
+		
+	def Reset(self):
+		self.Running = False
+
+		self.PauseButton.set_label('Pause')
+		
+		self.FinishTime = 0
+		self.StartTime = 0
+		self.set_icon(IconPixmap)
+		self.HourBox.set_text(str())
+		self.MinBox.set_text(str())
+		self.SecBox.set_text(str())
+		
+	def Pause(self):
+		if not self.Running:
+			self.Start()
+			return
+		
+		self.PauseButton.set_label('Resume')
+			
+		self.Running = False
+		self.FinishTime = 0
+		self.StartTime = 0
+
+		self.set_icon(IconPixmap)
+
+		self.__UpdateInputBoxes()
+			
+	def Start(self):
+		self.PauseButton.set_label('Pause')
+		
+		self.set_icon(ActiveIconPixmap)
+
+		self.StartTime = int(time.time())
+		self.FinishTime = int(time.time()) + self.__GetInputBoxTime()
+		
+		self.__UpdateInputBoxes()
+		
+		self.Running = True
+		
+		
 class Stopwatch(Gtk.Window):
 	def __init__(self, Parent = None, Title = 'Stopwatch', InitialSecs : float = 0.0):
 		self.Running = False
@@ -739,6 +922,8 @@ class Notification(Gtk.Window):
 		self.connect('delete-event', self.DismissClicked)
 		
 		if AudioFile:
+			print(f'Attempting to play alert file at "{AudioFile}"')
+			
 			self.Noisemaker = Audio.AudioEvent(AudioFile)
 			self.Noisemaker.Play(Loop)
 		else:
